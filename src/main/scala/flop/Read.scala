@@ -4,12 +4,6 @@ object Read {
 
   case class SyntaxError(val message: String) extends Exception(message)
 
-  val whitespace = List(' ', '\t', '\n')
-  val digits = List('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
-  val symbolStartChars = ('a' to 'z').toList ++ ('A' to 'Z').toList ++
-      List('_', '+', '-', '*', '/', '>', '<', '=')
-  val symbolChars = symbolStartChars ++ digits ++ List('!', '?')
-
   def read(input: List[Char]): List[Form] = {
     @scala.annotation.tailrec
     def read0(input: List[Char], forms: List[Form]): List[Form] = {
@@ -27,7 +21,15 @@ object Read {
     read0(input, List[Form]())
   }
 
-  def tryRead(input: List[Char]): (List[Char], Form) = {
+  def read(input: String): List[Form] = read(input.toList)
+
+  private val whitespace = List(' ', '\t', '\n')
+  private val digits = List('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
+  private val symbolStartChars = ('a' to 'z').toList ++ ('A' to 'Z').toList ++
+      List('_', '+', '-', '*', '/', '>', '<', '=')
+  private val symbolChars = symbolStartChars ++ digits ++ List('!', '?')
+
+  private def tryRead(input: List[Char]): (List[Char], Form) = {
     val char = input.head
 
     if (isDigit(char)) {
@@ -39,29 +41,29 @@ object Read {
     } else if (isListOpen(char)) {
       readList(input)
     } else {
-      throw new SyntaxError("invalid form starting with: " + char)
+      throw new SyntaxError(s"invalid form starting with: ${char}")
     }
   }
 
-  def isBlank(char: Char): Boolean = whitespace.contains(char)
+  private def isBlank(char: Char): Boolean = whitespace.contains(char)
 
-  def isDigit(char: Char): Boolean = digits.contains(char)
+  private def isDigit(char: Char): Boolean = digits.contains(char)
 
-  def isDigit(maybeChar: Option[Char]): Boolean =
-    !maybeChar.isEmpty && isDigit(maybeChar.get)
+  private def isDigit(maybeChar: Option[Char]): Boolean =
+    maybeChar.map(isDigit).getOrElse(false)
 
-  def isStringDelim(char: Char): Boolean = char == '"'
+  private def isStringDelim(char: Char): Boolean = char == '"'
 
-  def isSymbolStartChar(char: Char): Boolean = symbolStartChars.contains(char)
+  private def isSymbolStartChar(char: Char): Boolean = symbolStartChars.contains(char)
 
-  def isSymbolChar(char: Char): Boolean = symbolChars.contains(char)
+  private def isSymbolChar(char: Char): Boolean = symbolChars.contains(char)
 
-  def isListOpen(char: Char): Boolean = char == '('
+  private def isListOpen(char: Char): Boolean = char == '('
 
-  def isListClose(char: Char): Boolean = char == ')'
+  private def isListClose(char: Char): Boolean = char == ')'
 
   @scala.annotation.tailrec
-  def ignoreBlank(input: List[Char]): List[Char] = {
+  private def ignoreBlank(input: List[Char]): List[Char] = {
     if (input.isEmpty || !isBlank(input.head)) {
       input
     } else {
@@ -69,9 +71,11 @@ object Read {
     }
   }
 
-  def readNum(input: List[Char]): (List[Char], Form.NumF) = {
+
+  private type NumResult = Tuple2[List[Char], Form.NumF]
+  private def readNum(input: List[Char]): NumResult = {
     @scala.annotation.tailrec
-    def readNum0(input: List[Char], output: String): (List[Char], Form.NumF) = {
+    def readNum0(input: List[Char], output: String): NumResult = {
       if (input.isEmpty || !isDigit(input.head)) {
         val number = Integer.parseInt(output)
         (input, Form.NumF(number))
@@ -83,24 +87,26 @@ object Read {
     readNum0(input, "")
   }
 
-  def readStr(input: List[Char]): (List[Char], Form.StrF) = {
+  private type StrResult = Tuple2[List[Char], Form.StrF]
+  private def readStr(input: List[Char]): StrResult = {
     @scala.annotation.tailrec
-    def readStr0(input: List[Char], output: String): (List[Char], Form.StrF) = {
+    def readStr0(input: List[Char], output: String): StrResult = {
       if (input.isEmpty) {
-        throw SyntaxError("expected \", found EOF")
+        throw SyntaxError("unexpected EOF, expecting '\"'")
       } else if (isStringDelim(input.head)) {
-        (input.tail, Form.StrF(output)) // chop off closing string
+        (input.tail, Form.StrF(output)) // chop off closing quote
       } else {
         readStr0(input.tail, output + input.head)
       }
     }
 
-    readStr0(input.tail, "") // chop off opening string
+    readStr0(input.tail, "") // chop off opening quote
   }
 
-  def readSym(input: List[Char]): (List[Char], Form.SymF) = {
+  private type SymResult = Tuple2[List[Char], Form.SymF]
+  private def readSym(input: List[Char]): SymResult = {
     @scala.annotation.tailrec
-    def readSym0(input: List[Char], output: String): (List[Char], Form.SymF) = {
+    def readSym0(input: List[Char], output: String): SymResult = {
       if (input.isEmpty || !isSymbolChar(input.head)) {
         (input, Form.SymF(output))
       } else {
@@ -108,14 +114,15 @@ object Read {
       }
     }
 
-    readSym0(input, "") // chop off opening string
+    readSym0(input, "")
   }
 
-  def readList(input: List[Char]): (List[Char], Form.ListF) = {
+  private type ListResult = Tuple2[List[Char], Form.ListF]
+  private def readList(input: List[Char]): ListResult = {
     @scala.annotation.tailrec
-    def readList0(input: List[Char], output: List[Form]): (List[Char], Form.ListF) = {
+    def readList0(input: List[Char], output: List[Form]): ListResult = {
       if (input.isEmpty) {
-        throw SyntaxError("expected ), found EOF")
+        throw SyntaxError("unexpected EOF, expecting ')'")
       } else if (isListClose(input.head)) {
         (input.tail, Form.ListF(output.reverse)) // chop off closing paren
       } else if (isBlank(input.head)) {

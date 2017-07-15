@@ -8,12 +8,20 @@ object Main extends App {
   def repl(): Unit = {
     val line = StdIn.readLine("%s", "-> ")
 
-    if (line == null || line == "(quit)") {
+    if (line == null || line == "(exit)") {
       println("Goodbye")
     } else {
-      val forms = Read.read(line.toList)
-      println(forms)
+      eval(line)
       repl()
+    }
+  }
+
+  private def eval(line: String): Unit = {
+    try {
+      val forms = Read.read(line)
+      println(forms)
+    } catch {
+      case Read.SyntaxError(m) => println(s"Syntax Error: ${m}")
     }
   }
 
