@@ -77,7 +77,7 @@ object Read {
     @scala.annotation.tailrec
     def readNum0(input: List[Char], output: String): NumResult = {
       if (input.isEmpty || !isDigit(input.head)) {
-        val number = Integer.parseInt(output)
+        val number = output.toFloat
         (input, Form.NumF(number))
       } else {
         readNum0(input.tail, output + input.head)
