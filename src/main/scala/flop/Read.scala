@@ -18,7 +18,7 @@ object Read {
       }
     }
 
-    read0(input, List[Form]())
+    read0(input, List[Form]()).reverse
   }
 
   def read(input: String): List[Form] = read(input.toList)
@@ -41,7 +41,7 @@ object Read {
     } else if (isListOpen(char)) {
       readList(input)
     } else {
-      throw new SyntaxError(s"invalid form starting with: ${char}")
+      throw SyntaxError(s"invalid form starting with: ${char}")
     }
   }
 
@@ -54,9 +54,11 @@ object Read {
 
   private def isStringDelim(char: Char): Boolean = char == '"'
 
-  private def isSymbolStartChar(char: Char): Boolean = symbolStartChars.contains(char)
+  private def isSymbolStartChar(char: Char): Boolean =
+    symbolStartChars.contains(char)
 
-  private def isSymbolChar(char: Char): Boolean = symbolChars.contains(char)
+  private def isSymbolChar(char: Char): Boolean =
+    symbolChars.contains(char)
 
   private def isListOpen(char: Char): Boolean = char == '('
 
@@ -70,7 +72,6 @@ object Read {
       ignoreBlank(input.tail)
     }
   }
-
 
   private type NumResult = Tuple2[List[Char], Form.NumF]
   private def readNum(input: List[Char]): NumResult = {

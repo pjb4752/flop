@@ -1,6 +1,7 @@
 package flop
 
 import scala.io.StdIn
+import scala.sys.process._
 
 object Main extends App {
 
@@ -21,9 +22,27 @@ object Main extends App {
   private def eval(line: String): Unit = {
     try {
       val forms = Read.read(line)
-      val nodes = Analyze.analyze(forms)
+      println("--- reader forms ---")
       println(forms)
+
+      val nodes = Analyze.analyze(forms)
+      println("--- ast nodes ---")
       println(nodes)
+
+      val symbolTable = new CompilerSymbolTable()
+      val source = Emit.emit(nodes, symbolTable)
+      println("--- lua source ---")
+      println(source)
+
+      TmpFile.withTmpFile(source, { tmp =>
+        val cmd = "/usr/local/bin/luajit %s".format(tmp.getCanonicalPath())
+        val output = Process(cmd).lineStream_!
+
+        println("--- lua output ---")
+        for (s <- output) {
+          println(s)
+        }
+      })
     } catch {
       case Read.SyntaxError(m) => println(s"Syntax Error: ${m}")
       case Analyze.CompileError(m) => println(s"Compile Error: ${m}")
