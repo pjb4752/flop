@@ -2,21 +2,23 @@ package flop
 
 object Analyze {
 
+  case class State(isModuleLevel: Boolean)
+
   case class CompileError(val message: String) extends Exception(message)
 
   def analyze(forms: List[Form]): List[Node] =
     forms.map(tryAnalyze(State(isModuleLevel = true)))
 
   private def tryAnalyze(state: State)(form: Form): Node = form match {
-    case Form.NumF(v) => Node.NumLit(state, v)
-    case Form.StrF(v) => Node.StrLit(state, v)
-    case Form.SymF(v) => Node.SymLit(state, v)
+    case Form.NumF(v) => Node.NumLit(v)
+    case Form.StrF(v) => Node.StrLit(v)
+    case Form.SymF(v) => Node.SymLit(v)
     case Form.ListF(l) => analyzeList(state, l)
   }
 
   private def analyzeList(state: State, list: List[Form]): Node = list match {
     case op :: args => analyzeOp(state, op, args)
-    case _ => Node.ListLit(state, List[Node]())
+    case _ => Node.ListLit(List[Node]())
   }
 
   private def analyzeOp(state: State, op: Form, args: List[Form]): Node = op match {
@@ -39,7 +41,7 @@ object Analyze {
     } else {
       val sym = tryAnalyze(state)(args(0))
       val expr = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
-      Node.DefN(state, sym.asInstanceOf[Node.SymLit], expr)
+      Node.DefN(sym.asInstanceOf[Node.SymLit], expr)
     }
   }
 
@@ -49,7 +51,7 @@ object Analyze {
     } else {
       val bindings = analyzeBindings(state, args(0))
       val exprs = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
-      Node.LetN(state, bindings, exprs)
+      Node.LetN(bindings, exprs)
     }
   }
 
@@ -58,7 +60,7 @@ object Analyze {
       throw CompileError("invalid if form, expected (if TEST IF-EXPR ELSE-EXPR)")
     } else {
       val analyzed = args.map(tryAnalyze(state.copy(isModuleLevel = false)))
-      Node.IfN(state, analyzed(0), analyzed(1), analyzed(2))
+      Node.IfN(analyzed(0), analyzed(1), analyzed(2))
     }
   }
 
@@ -71,7 +73,7 @@ object Analyze {
       throw CompileError(s"arity mismatch in ${op}, expected ${fn.arity}, got ${args.length}")
     }
     val params = args.map(tryAnalyze(state.copy(isModuleLevel = false)))
-    Node.ApplyN(state, fn, params)
+    Node.ApplyN(fn, params)
   }
 
   private def analyzeBindings(state: State, form: Form): List[(Node.SymLit, Node)] = {

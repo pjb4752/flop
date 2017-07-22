@@ -29,8 +29,7 @@ object Main extends App {
       println("--- ast nodes ---")
       println(nodes)
 
-      val symbolTable = new CompilerSymbolTable()
-      val source = Emit.emit(nodes, symbolTable)
+      val source = Emit.emit(nodes)
       println("--- lua source ---")
       println(source)
 

@@ -2,6 +2,6 @@ package flop
 
 trait Compilable {
 
-  def compile(symbolTable: SymbolTable)(source: String): String =
-    Emit.emit(Analyze.analyze(Read.read(source)), symbolTable)
+  def compile(state: Emit.State)(source: String): String =
+    Emit.emit(Analyze.analyze(Read.read(source)), state)
 }

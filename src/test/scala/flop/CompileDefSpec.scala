@@ -2,17 +2,7 @@ package flop
 
 import org.scalatest._
 
-class CompileDefSpec extends fixture.FunSpec with Matchers with Compilable {
-
-  case class FixtureParam(compileFn: String => String)
-
-  def withFixture(test: OneArgTest) = {
-    val symbolTable = new CompilerSymbolTable()
-    val compileFn = compile(symbolTable) _
-    val fixture = FixtureParam(compileFn)
-
-    withFixture(test.toNoArgTest(fixture))
-  }
+class CompileDefSpec extends BaseCompileSpec {
 
   describe("compiling def special form") {
     describe("defining from literal values") {
