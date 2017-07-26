@@ -26,6 +26,7 @@ object Analyze {
       case "def" => analyzeDef(state, args)
       case "let" => analyzeLet(state, args)
       case "if" => analyzeIf(state, args)
+      case "fn" => analyzeFn(state, args)
       case _ => analyzeApply(state, s, args)
     }
     case u => throw CompileError(s"cannot apply ${u}")
@@ -50,6 +51,7 @@ object Analyze {
       throw CompileError("invalid let form, expected (let BIND EXPR)")
     } else {
       val bindings = analyzeBindings(state, args(0))
+      // TODO singularize exprs
       val exprs = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
       Node.LetN(bindings, exprs)
     }
@@ -62,6 +64,16 @@ object Analyze {
       val analyzed = args.map(tryAnalyze(state.copy(isModuleLevel = false)))
       Node.IfN(analyzed(0), analyzed(1), analyzed(2))
     }
+  }
+
+  private def analyzeFn(state: State, args: List[Form]): Node = {
+    if (args.length != 2) {
+      throw CompileError("invalid fn form, expected (fn PARAM EXPR)")
+    }
+
+    val params = analyzeParams(args(0))
+    val expr = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
+    Node.FnN(params, expr)
   }
 
   private def analyzeApply(state: State, op: String, args: List[Form]): Node = {
@@ -95,5 +107,17 @@ object Analyze {
       val expr = tryAnalyze(state.copy(isModuleLevel = false))(forms(1))
       (sym.asInstanceOf[Node.SymLit], expr)
     }
+  }
+
+  private def analyzeParams(form: Form): List[Node.SymLit] = {
+    val rawSymbols = form match {
+      case Form.ListF(raw) => raw
+      case _ => throw CompileError("fn PARAM must be list of names")
+    }
+
+    rawSymbols.map(s => s match {
+      case Form.SymF(value) => Node.SymLit(value)
+      case _ => throw CompileError("fn PARAM must be list of names")
+    })
   }
 }
