@@ -51,9 +51,8 @@ object Analyze {
       throw CompileError("invalid let form, expected (let BIND EXPR)")
     } else {
       val bindings = analyzeBindings(state, args(0))
-      // TODO singularize exprs
-      val exprs = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
-      Node.LetN(bindings, exprs)
+      val expr = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
+      Node.LetN(bindings, expr)
     }
   }
 

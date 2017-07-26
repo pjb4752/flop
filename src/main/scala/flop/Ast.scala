@@ -11,8 +11,7 @@ object Node {
   case class ListLit(value: List[Node]) extends Node
 
   case class DefN(name: SymLit, expr: Node) extends Node
-  // TODO singularize exprs
-  case class LetN(bindings: Bindings, exprs: Node) extends Node
+  case class LetN(bindings: Bindings, expr: Node) extends Node
   case class IfN(test: Node, ifExpr: Node, elseExpr: Node) extends Node
   case class FnN(params: List[SymLit], expr: Node) extends Node
 
