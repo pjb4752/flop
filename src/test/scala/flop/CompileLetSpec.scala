@@ -68,5 +68,42 @@ class CompileLetSpec extends BaseCompileSpec {
             |end""".stripMargin)
       }
     }
+
+    describe("nested binding forms") {
+      it("should produce the correct lua") { f =>
+        f.compileFn("(let (x (let (y 5) y)) x)") should equal(
+          """local result_1
+            |do
+            |local result_2
+            |do
+            |local y = 5.0
+            |result_2 = y
+            |end
+            |local x = result_2
+            |result_1 = x
+            |end""".stripMargin)
+      }
+    }
+
+    describe("complex binding forms") {
+      it("should produce the correct lua") { f =>
+        f.compileFn(
+          """(let (x (if (> y z) y z)
+            |      m 5)
+            |  (+ x m))""".stripMargin) should equal(
+          """local result_1
+            |do
+            |local result_2
+            |if (y > z) then
+            |result_2 = y
+            |else
+            |result_2 = z
+            |end
+            |local x = result_2
+            |local m = 5.0
+            |result_1 = (x + m)
+            |end""".stripMargin)
+      }
+    }
   }
 }

@@ -80,9 +80,21 @@ object Emit {
   }
 
   private def emitBindings(state: State, bindings: Node.Bindings): String = {
-    bindings.map({ case (sym, expr) =>
-      s"local ${sym.value} = ${tryEmit(state)(expr)}"
-    }).mkString("\n  ")
+    bindings.map({ case (sym, expr) => expr match {
+        case _:Node.LetN | _:Node.IfN => emitComplexBinding(state, sym, expr)
+        case _ => emitSimpleBinding(state, sym, expr)
+      }
+    }).mkString("\n")
+  }
+
+  private def emitComplexBinding(state: State, symbol: Node.SymLit, expr: Node): String = {
+    val newState = state.incSymbol()
+    s"""${tryEmit(state)(expr)}
+       |local ${symbol.value} = ${state.incSymbol().symbol}""".stripMargin
+  }
+
+  private def emitSimpleBinding(state: State, symbol: Node.SymLit, expr: Node): String = {
+    s"local ${symbol.value} = ${tryEmit(state)(expr)}"
   }
 
   private def emitApply(state: State, fn: Type.Fn,
