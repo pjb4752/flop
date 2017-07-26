@@ -13,4 +13,6 @@ object Node {
   case class LetN(bindings: List[(SymLit, Node)], exprs: Node) extends Node
   case class IfN(test: Node, ifExpr: Node, elseExpr: Node) extends Node
   case class ApplyN(fn: Type.Fn, args: List[Node]) extends Node
+
+  type Bindings = List[(SymLit, Node)]
 }

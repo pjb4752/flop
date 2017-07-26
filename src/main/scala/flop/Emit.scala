@@ -41,52 +41,48 @@ object Emit {
   private def emitDef(state: State, name: Node.SymLit, value: Node): String =
     s"local ${name.value} = ${tryEmit(state)(value)}"
 
-  private def emitLet(state: State, bindings: List[(Node.SymLit, Node)],
-      exprs: Node): String = {
-    exprs match {
-      case _:Node.NumLit | _:Node.StrLit | _:Node.SymLit | _:Node.ApplyN =>
-          emitSimpleLet(state, bindings, exprs)
-      case _ => emitComplexLet(state, bindings, exprs)
-    }
-  }
-
-  private def emitSimpleLet(state: State, bindings: List[(Node.SymLit, Node)],
-      exprs: Node): String = {
+  private def emitLet(state: State, bindings: Node.Bindings, expr: Node): String = {
     val newState = state.incSymbol()
+    val bodyClause = emitExpr(newState, expr)
+
     s"""local ${newState.symbol}
        |do
-       |  ${emitBindings(newState, bindings)}
-       |  ${newState.symbol} = ${tryEmit(newState)(exprs)}
+       |${emitBindings(newState, bindings)}
+       |${bodyClause}
        |end""".stripMargin
   }
 
-  private def emitComplexLet(state: State, bindings: List[(Node.SymLit, Node)],
-      exprs: Node): String = {
+  private def emitIf(state: State, test: Node, ifExpr: Node, elseExpr: Node): String = {
     val newState = state.incSymbol()
-    s"""local ${newState.symbol}
-       |do
-       |  ${emitBindings(newState, bindings)}
-       |  ${tryEmit(newState)(exprs)}
-       |  ${newState.symbol} = ${newState.incSymbol().symbol}
-       |end""".stripMargin
-  }
+    val ifClause = emitExpr(newState, ifExpr)
+    val elseClause = emitExpr(newState, elseExpr)
 
-  private def emitIf(state: State, test: Node, ifExpr: Node,
-      elseExpr: Node): String = {
-    val newState = state.incSymbol()
     s"""local ${newState.symbol}
        |if ${tryEmit(newState)(test)} then
-       |  ${newState.symbol} = ${tryEmit(newState)(ifExpr)}
+       |${ifClause}
        |else
-       |  ${newState.symbol} = ${tryEmit(newState)(elseExpr)}
+       |${elseClause}
        |end""".stripMargin
   }
 
-  private def emitBindings(state: State,
-      bindings: List[(Node.SymLit, Node)]): String = {
-    bindings.map(v =>
-      s"local ${v._1.value} = ${tryEmit(state)(v._2)}"
-    ).mkString("\n  ")
+  private def emitExpr(state: State, expr: Node): String = expr match {
+    case _:Node.LetN | _:Node.IfN => emitComplexExpr(state, expr)
+    case _ => emitSimpleExpr(state, expr)
+  }
+
+  private def emitSimpleExpr(state: State, expr: Node): String = {
+    s"${state.symbol} = ${tryEmit(state)(expr)}"
+  }
+
+  private def emitComplexExpr(state: State, expr: Node): String = {
+    s"""${tryEmit(state)(expr)}
+       |${state.symbol} = ${state.incSymbol().symbol}""".stripMargin
+  }
+
+  private def emitBindings(state: State, bindings: Node.Bindings): String = {
+    bindings.map({ case (sym, expr) =>
+      s"local ${sym.value} = ${tryEmit(state)(expr)}"
+    }).mkString("\n  ")
   }
 
   private def emitApply(state: State, fn: Type.Fn,
