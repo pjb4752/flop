@@ -16,6 +16,21 @@ class CompileLetSpec extends BaseCompileSpec {
       }
     }
 
+    describe("when the value is a function") {
+      it("should produce the correct lua") { f =>
+        f.compileFn("(let (x (fn (a b) (+ a b))) x)") should equal(
+          """local var_1
+            |do
+            |local x = function(a, b)
+            |local var_2
+            |var_2 = (a + b)
+            |return var_2
+            |end
+            |var_1 = x
+            |end""".stripMargin)
+      }
+    }
+
     describe("when the value is the result of a function") {
       it("should produce the correct lua") { f =>
         f.compileFn("(let (x (+ 1 2)) (+ 1 x))") should equal(

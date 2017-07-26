@@ -68,11 +68,13 @@ object Emit {
   }
 
   private def emitFn(state: State, names: List[Node.SymLit], expr: Node): String = {
-    val newState = state.nextFnState()
+    val newState = state.nextVarState()
     val paramNames = names.map(_.value).mkString(", ")
 
-    s"""local ${newState.fnName} = function(${paramNames})
-          return ${tryEmit(newState)(expr)}
+    s"""function(${paramNames})
+       |local ${newState.varName}
+       |${emitExpr(newState, expr)}
+       |return ${newState.varName}
        |end""".stripMargin
   }
 

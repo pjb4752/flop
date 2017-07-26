@@ -17,6 +17,17 @@ class CompileDefSpec extends BaseCompileSpec {
       }
     }
 
+    describe("defining a function") {
+      it("should produce the correct lua") { f =>
+        f.compileFn("(def x (fn (a b) (+ a b)))") should equal(
+          """local x = function(a, b)
+            |local var_1
+            |var_1 = (a + b)
+            |return var_1
+            |end""".stripMargin)
+      }
+    }
+
     describe("non-module level defs") {
       describe("attempt to def inside a def") {
         it("should raise a compilation error") { f =>
