@@ -89,8 +89,8 @@ object Emit {
 
   private def emitApply(state: State, fn: Type.Fn,
       args: List[Node]): String = fn match {
-    case Type.InfixFn(n) => emitInfixApply(state, n, args(0), args(1))
-    case Type.PrefixFn(n, _) => emitPrefixApply(state, n, args)
+    case Type.IFn(n) => emitInfixApply(state, n, args(0), args(1))
+    case Type.PFn(n, _) => emitPrefixApply(state, n, args)
   }
 
   private def emitExpr(state: State, expr: Node): String = expr match {

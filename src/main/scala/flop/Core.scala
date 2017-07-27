@@ -3,16 +3,16 @@ package flop
 object Core {
 
   val exported = Map[String, Type.Fn](
-    "+" -> Type.InfixFn("+"),
-    "-" -> Type.InfixFn("-"),
-    "*" -> Type.InfixFn("*"),
-    "/" -> Type.InfixFn("/"),
-    ">" -> Type.InfixFn(">"),
-    "<" -> Type.InfixFn("<"),
-    "=" -> Type.InfixFn("=="),
-    ">=" -> Type.InfixFn(">="),
-    "<=" -> Type.InfixFn("<="),
-    "<>" -> Type.InfixFn("~="),
-    "print" -> Type.PrefixFn("print", 1)
+    "+" -> Type.IFn("+"),
+    "-" -> Type.IFn("-"),
+    "*" -> Type.IFn("*"),
+    "/" -> Type.IFn("/"),
+    ">" -> Type.IFn(">"),
+    "<" -> Type.IFn("<"),
+    "=" -> Type.IFn("=="),
+    ">=" -> Type.IFn(">="),
+    "<=" -> Type.IFn("<="),
+    "<>" -> Type.IFn("~="),
+    "print" -> Type.PFn("print", 1)
   )
 }
