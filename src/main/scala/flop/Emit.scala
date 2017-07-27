@@ -32,11 +32,20 @@ object Emit {
     case Node.NumLit(v) => v.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
     case Node.SymLit(v) => v
+    case Node.ListLit(v) => emitList(state, v)
     case Node.DefN(n, v) => emitDef(state, n, v)
     case Node.LetN(b, e) => emitLet(state, b, e)
     case Node.IfN(t, i, e) => emitIf(state, t, i, e)
     case Node.FnN(b, e) => emitFn(state, b, e)
     case Node.ApplyN(fn, args) => emitApply(state, fn, args)
+  }
+
+  // TODO handle complex expression in list members, like let form
+  private def emitList(state: State, v: List[Node]): String = {
+    val emitFn = tryEmit(state) _
+    val members = v.map(emitFn).mkString(", ")
+
+    s"List.new(${members})"
   }
 
   private def emitDef(state: State, name: Node.SymLit, value: Node): String =
