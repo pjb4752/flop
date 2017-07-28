@@ -13,12 +13,18 @@ object Analyze {
     case Form.NumF(v) => Node.NumLit(v)
     case Form.StrF(v) => Node.StrLit(v)
     case Form.SymF(v) => Node.SymLit(v)
-    case Form.ListF(l) => analyzeExpr(state, l)
+    case Form.ListF(l) => analyzeList(state, l)
+    case Form.MapF(m) => analyzeMap(state, m)
   }
 
-  private def analyzeExpr(state: State, list: List[Form]): Node = list match {
+  private def analyzeList(state: State, list: List[Form]): Node = list match {
     case op :: args => analyzeOp(state, op, args)
     case _ => Node.ListLit(List[Node]())
+  }
+
+  private def analyzeMap(state: State, map: Map[Form, Form]): Node = {
+    val analyzeFn = tryAnalyze(state.copy(isModuleLevel = false)) _
+    Node.MapLit(map.map({ case (k ,v) => (analyzeFn(k), analyzeFn(v)) }))
   }
 
   private def analyzeOp(state: State, op: Form, args: List[Form]): Node = op match {
@@ -27,7 +33,7 @@ object Analyze {
       case "let" => analyzeLet(state, args)
       case "if" => analyzeIf(state, args)
       case "fn" => analyzeFn(state, args)
-      case "list" => analyzeList(state, args)
+      case "list" => analyzeListForm(state, args)
       case _ => analyzeApply(state, s, args)
     }
     case u => throw CompileError(s"cannot apply ${u}")
@@ -76,10 +82,11 @@ object Analyze {
     Node.FnN(params, expr)
   }
 
-  private def analyzeList(state: State, args: List[Form]): Node = {
+  private def analyzeListForm(state: State, args: List[Form]): Node = {
     val analyzeFn = tryAnalyze(state.copy(isModuleLevel = false)) _
     Node.ListLit(args.map(analyzeFn))
   }
+
 
   private def analyzeApply(state: State, op: String, args: List[Form]): Node = {
     if (!Core.exported.contains(op)) {

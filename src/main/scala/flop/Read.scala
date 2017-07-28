@@ -1,5 +1,7 @@
 package flop
 
+import scala.collection.immutable.ListMap
+
 object Read {
 
   case class SyntaxError(val message: String) extends Exception(message)
@@ -40,6 +42,8 @@ object Read {
       readSym(input)
     } else if (isListOpen(char)) {
       readList(input)
+    } else if (isMapOpen(char)) {
+      readMap(input)
     } else {
       throw SyntaxError(s"invalid form starting with: ${char}")
     }
@@ -63,6 +67,10 @@ object Read {
   private def isListOpen(char: Char): Boolean = char == '('
 
   private def isListClose(char: Char): Boolean = char == ')'
+
+  private def isMapOpen(char: Char): Boolean = char == '{'
+
+  private def isMapClose(char: Char): Boolean = char == '}'
 
   @scala.annotation.tailrec
   private def ignoreBlank(input: List[Char]): List[Char] = {
@@ -136,5 +144,31 @@ object Read {
     }
 
     readList0(input.tail, List[Form]()) // chop off opening paren
+  }
+
+  private type MapResult = Tuple2[List[Char], Form.MapF]
+  private def readMap(input: List[Char]): MapResult = {
+    @scala.annotation.tailrec
+    def readMap0(input: List[Char], output: List[Form]): MapResult = {
+      if (input.isEmpty) {
+        throw SyntaxError("unexpected EOF, expecting '}'")
+      } else if (isMapClose(input.head)) {
+        if (output.length % 2 == 0) {
+          val result = output.grouped(2).foldRight(ListMap[Form, Form]())(
+            (el, memo) => memo + (el(1), el(0)))
+          (input.tail, Form.MapF(result)) // chop off closing bracket
+        } else {
+          throw SyntaxError("uneven number of forms in map literal")
+        }
+      } else if (isBlank(input.head)) {
+        val in = ignoreBlank(input)
+        readMap0(in, output)
+      } else {
+        val (in, form) = tryRead(input)
+        readMap0(in, form :: output)
+      }
+    }
+
+    readMap0(input.tail, List[Form]()) // chop off opening bracket
   }
 }

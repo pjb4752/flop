@@ -9,6 +9,7 @@ object Node {
   case class StrLit(value: String) extends Node
   case class SymLit(val value: String) extends Node
   case class ListLit(value: List[Node]) extends Node
+  case class MapLit(value: Map[Node, Node]) extends Node
 
   case class DefN(name: SymLit, expr: Node) extends Node
   case class LetN(bindings: Bindings, expr: Node) extends Node
