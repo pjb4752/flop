@@ -4,13 +4,19 @@ sealed trait Type
 
 object Type {
 
-  abstract class Fn(val name: String) extends Type {
-    val arity: Int
-  }
+  case object Unit extends Type
 
-  case class IFn(override val name: String) extends Fn(name) {
-    val arity = 2
-  }
+  case object Boolean extends Type
 
-  case class PFn(override val name: String, val arity: Int) extends Fn(name)
+  case object Number extends Type
+
+  case object String extends Type
+
+  case object Symbol extends Type
+
+  case object List extends Type
+
+  case object Map extends Type
+
+  case class Fn(pTypes: List[Type], rType: Type) extends Type
 }

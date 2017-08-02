@@ -19,7 +19,7 @@ class CompileDefSpec extends BaseCompileSpec {
 
     describe("defining a function") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x (fn (a b) (+ a b)))") should equal(
+        f.compileFn("(def x (fn num {a num b num} (+ a b)))") should equal(
           """local x = function(a, b)
             |local var_1
             |var_1 = (a + b)

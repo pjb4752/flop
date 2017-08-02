@@ -31,14 +31,15 @@ object Emit {
   private def tryEmit(state: State)(node: Node): String = node match {
     case Node.NumLit(v) => v.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
-    case Node.SymLit(v) => v
+    case Node.SymLit(v, _) => v
     case Node.ListLit(v) => emitList(state, v)
     case Node.MapLit(m) => emitMap(state, m)
-    case Node.DefN(n, v) => emitDef(state, n, v)
-    case Node.LetN(b, e) => emitLet(state, b, e)
-    case Node.IfN(t, i, e) => emitIf(state, t, i, e)
-    case Node.FnN(b, e) => emitFn(state, b, e)
-    case Node.ApplyN(fn, args) => emitApply(state, fn, args)
+    case Node.DefN(n, v, _) => emitDef(state, n, v)
+    case Node.LetN(b, e, _) => emitLet(state, b, e)
+    case Node.IfN(t, i, e, _) => emitIf(state, t, i, e)
+    case Node.FlopFn(p, _, e) => emitFunction(state, p, e)
+    case Node.LuaApply(fn, args, _) => emitLuaApply(state, fn, args)
+    case Node.FlopApply(n, args, _) => emitFlopApply(state, n, args)
   }
 
   // TODO handle complex expression in list members, like let form
@@ -85,9 +86,9 @@ object Emit {
        |end""".stripMargin
   }
 
-  private def emitFn(state: State, names: List[Node.SymLit], expr: Node): String = {
+  private def emitFunction(state: State, params: Node.Params, expr: Node): String = {
     val newState = state.nextVarState()
-    val paramNames = names.map(_.value).mkString(", ")
+    val paramNames = params.map(_._1.value).mkString(", ")
 
     s"""function(${paramNames})
        |local ${newState.varName}
@@ -96,10 +97,13 @@ object Emit {
        |end""".stripMargin
   }
 
-  private def emitApply(state: State, fn: Type.Fn,
-      args: List[Node]): String = fn match {
-    case Type.IFn(n) => emitInfixApply(state, n, args(0), args(1))
-    case Type.PFn(n, _) => emitPrefixApply(state, n, args)
+  private def emitLuaApply(state: State, fn: Node.LuaFn, args: List[Node]): String = fn match {
+    case Node.LuaIFn(p, r, n) => emitInfixApply(state, n, args(0), args(1))
+    case Node.LuaPFn(p, r, n) => emitPrefixApply(state, n, args)
+  }
+
+  private def emitFlopApply(state: State, name: String, args: List[Node]): String = {
+    emitPrefixApply(state, name, args)
   }
 
   private def emitExpr(state: State, expr: Node): String = expr match {

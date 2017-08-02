@@ -7,7 +7,7 @@ class CompileListSpec extends BaseCompileSpec {
   describe("compiling list special form") {
     describe("creating a list from a single literal") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(list a)") should equal("List.new(a)")
+        f.compileFn("(list 5)") should equal("List.new(5.0)")
       }
     }
 

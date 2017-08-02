@@ -6,7 +6,7 @@ import scala.sys.process._
 object Main extends App {
 
   @scala.annotation.tailrec
-  def repl(): Unit = {
+  def repl(state: Analyze.State): Unit = {
     val line = StdIn.readLine("%s", "-> ")
 
     if (line == null || line == "(exit)") {
@@ -14,18 +14,20 @@ object Main extends App {
     } else if (line.isEmpty) {
       println("")
     } else {
-      eval(line)
-      repl()
+      val newState = eval(line, state)
+      repl(newState)
     }
   }
 
-  private def eval(line: String): Unit = {
+  private def eval(line: String, state: Analyze.State): Analyze.State = {
+    var finalState = state
+
     try {
       val forms = Read.read(line)
       println("--- reader forms ---")
       println(forms)
 
-      val nodes = Analyze.analyze(forms)
+      val (newState, nodes) = Analyze.analyze(state, forms)
       println("--- ast nodes ---")
       println(nodes)
 
@@ -42,11 +44,13 @@ object Main extends App {
           println(s)
         }
       })
+      finalState = newState
     } catch {
       case Read.SyntaxError(m) => println(s"Syntax Error: ${m}")
       case Analyze.CompileError(m) => println(s"Compile Error: ${m}")
     }
+    finalState
   }
 
-  repl()
+  repl(Analyze.State(true, Map[String, Type](), Nil))
 }

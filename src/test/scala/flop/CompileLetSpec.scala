@@ -18,7 +18,7 @@ class CompileLetSpec extends BaseCompileSpec {
 
     describe("when the value is a function") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(let (x (fn (a b) (+ a b))) x)") should equal(
+        f.compileFn("(let (x (fn num {a num b num} (+ a b))) x)") should equal(
           """local var_1
             |do
             |local x = function(a, b)
@@ -86,7 +86,7 @@ class CompileLetSpec extends BaseCompileSpec {
 
     describe("nested binding forms") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(let (x (let (y 5) y)) x)") should equal(
+        f.compileFn("(let (x (let (y 5) y)) (+ 1 x))") should equal(
           """local var_1
             |do
             |local var_2
@@ -95,7 +95,7 @@ class CompileLetSpec extends BaseCompileSpec {
             |var_2 = y
             |end
             |local x = var_2
-            |var_1 = x
+            |var_1 = (1.0 + x)
             |end""".stripMargin)
       }
     }
@@ -103,16 +103,16 @@ class CompileLetSpec extends BaseCompileSpec {
     describe("complex binding forms") {
       it("should produce the correct lua") { f =>
         f.compileFn(
-          """(let (x (if (> y z) y z)
+          """(let (x (if (> testnum1 testnum2) testnum1 testnum2)
             |      m 5)
             |  (+ x m))""".stripMargin) should equal(
           """local var_1
             |do
             |local var_2
-            |if (y > z) then
-            |var_2 = y
+            |if (testnum1 > testnum2) then
+            |var_2 = testnum1
             |else
-            |var_2 = z
+            |var_2 = testnum2
             |end
             |local x = var_2
             |local m = 5.0

@@ -19,7 +19,7 @@ class CompileApplySpec extends BaseCompileSpec {
 
     describe("nested function calls") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(print (+ 1 2))") should equal("print((1.0 + 2.0))")
+        f.compileFn("(+ 4 (+ 1 2))") should equal("(4.0 + (1.0 + 2.0))")
       }
     }
   }

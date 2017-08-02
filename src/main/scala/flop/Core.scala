@@ -2,17 +2,17 @@ package flop
 
 object Core {
 
-  val exported = Map[String, Type.Fn](
-    "+" -> Type.IFn("+"),
-    "-" -> Type.IFn("-"),
-    "*" -> Type.IFn("*"),
-    "/" -> Type.IFn("/"),
-    ">" -> Type.IFn(">"),
-    "<" -> Type.IFn("<"),
-    "=" -> Type.IFn("=="),
-    ">=" -> Type.IFn(">="),
-    "<=" -> Type.IFn("<="),
-    "<>" -> Type.IFn("~="),
-    "print" -> Type.PFn("print", 1)
+  val symbols = Map[String, Node.LuaFn](
+    "+" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Number, "+"),
+    "-" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Number, "-"),
+    "*" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Number, "*"),
+    "/" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Number, "/"),
+    ">" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Boolean, ">"),
+    "<" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Boolean, "<"),
+    "=" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Boolean, "=="),
+    ">=" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Boolean, ">="),
+    "<=" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Boolean, "<="),
+    "<>" -> Node.LuaIFn(List(Type.Number, Type.Number), Type.Boolean, "~="),
+    "print" -> Node.LuaPFn(List(Type.String), Type.Unit, "print")
   )
 }

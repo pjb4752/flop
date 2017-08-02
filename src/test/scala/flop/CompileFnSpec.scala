@@ -7,7 +7,7 @@ class CompileFnSpec extends BaseCompileSpec {
   describe("compiling fn special form") {
     describe("compilation of simple functions") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(fn (a b) (+ a b))") should equal(
+        f.compileFn("(fn num {a num b num} (+ a b))") should equal(
           """function(a, b)
             |local var_1
             |var_1 = (a + b)
@@ -19,7 +19,7 @@ class CompileFnSpec extends BaseCompileSpec {
     describe("compilation of functions with conditional statements") {
       it("should produce the correct lua") { f =>
         f.compileFn(
-          """(fn (a b)
+          """(fn str {a num b num}
             |  (if (> a b)
             |    "max is a"
             |    "max is b"))""".stripMargin) should equal(
@@ -41,7 +41,7 @@ class CompileFnSpec extends BaseCompileSpec {
   describe("compilation of functions with let forms") {
     it ("should produce the correct lua") { f =>
         f.compileFn(
-          """(fn (a)
+          """(fn num {a num}
             |  (let (b 5)
             |    (+ a b)))""".stripMargin) should equal(
           """function(a)
