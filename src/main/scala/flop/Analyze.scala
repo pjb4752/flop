@@ -189,6 +189,7 @@ object Analyze {
 
   private def analyzeTypeLiteral(lit: String): Type = lit match {
     case "unit" => Type.Unit
+    case "bool" => Type.Boolean
     case "num" => Type.Number
     case "str" => Type.String
     case "sym" => Type.Symbol
