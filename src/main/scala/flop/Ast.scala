@@ -11,6 +11,13 @@ object Node {
   type Param = (SymLit, Type)
   type Params = List[Param]
 
+  sealed trait BoolLit extends Node {
+    val eType = Type.Boolean
+  }
+
+  case object TrueLit extends BoolLit
+  case object FalseLit extends BoolLit
+
   case class NumLit(value: Float) extends Node {
     val eType = Type.Number
   }

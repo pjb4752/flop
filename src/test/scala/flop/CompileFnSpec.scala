@@ -56,4 +56,20 @@ class CompileFnSpec extends BaseCompileSpec {
             |end""".stripMargin)
     }
   }
+
+  describe("attempt to compile functions with reserved params") {
+    describe("the reserved name is a special form") {
+      it("should fail to compile") { f =>
+        val flopSource = "(fn num {x num def num} (+ x def))"
+        an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+      }
+    }
+
+    describe("the reserved name is a builtin") {
+      it("should fail to compile") { f =>
+        val flopSource = "(fn num {x num true num} (+ x true))"
+        an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+      }
+    }
+  }
 }

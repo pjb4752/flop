@@ -28,6 +28,22 @@ class CompileDefSpec extends BaseCompileSpec {
       }
     }
 
+    describe("attempts to redefine special values") {
+      describe("when the value is a special form") {
+        it("should fail to compile") { f =>
+          val flopSource = "(def if 5)"
+          an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+        }
+      }
+
+      describe("when the value is a builtin") {
+        it("should fail to compile") { f =>
+          val flopSource = "(def + 5)"
+          an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+        }
+      }
+    }
+
     describe("non-module level defs") {
       describe("attempt to def inside a def") {
         it("should raise a compilation error") { f =>

@@ -39,6 +39,9 @@ object Analyze {
   }
 
   private def analyzeSymbol(state: State, name: String): Node = {
+    if (Core.specialForms.contains(name)) {
+      throw CompileError(s"cannot take value of special form ${name}")
+    }
     val eType = lookupSymbolType(state, name)
     Node.SymLit(name, eType)
   }
@@ -75,6 +78,10 @@ object Analyze {
     } else {
       val symbolText = args(0).asInstanceOf[Form.SymF].value
       val expr = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
+
+      if (Core.reserved.contains(symbolText)) {
+        throw CompileError(s"cannot redefine ${symbolText}")
+      }
       val symbol = Node.SymLit(symbolText, expr.eType)
 
       Node.DefN(symbol, expr, expr.eType)
@@ -161,8 +168,15 @@ object Analyze {
       }
     }
 
-    if (Core.symbols.contains(op)) {
-      Node.LuaApply(Core.symbols(op), arguments, fnType.rType)
+    if (Core.builtins.contains(op)) {
+      val node = Core.builtins(op)
+      node.eType match {
+        case _:Type.Fn => {
+          val builtinFn = node.asInstanceOf[Node.LuaFn]
+          Node.LuaApply(builtinFn, arguments, fnType.rType)
+        }
+        case t => throw CompileError(s"expected fn type, but ${op} is type ${t}")
+      }
     } else {
       Node.FlopApply(op, arguments, fnType.rType)
     }
@@ -198,6 +212,9 @@ object Analyze {
     } else {
       val symbolText = forms(0).asInstanceOf[Form.SymF].value
       val expr = tryAnalyze(state.copy(isModuleLevel = false))(forms(1))
+      if (Core.reserved.contains(symbolText)) {
+        throw CompileError(s"cannot redefine ${symbolText}")
+      }
       val symbol = Node.SymLit(symbolText, expr.eType)
 
       (symbol, expr)
@@ -218,6 +235,9 @@ object Analyze {
       case Form.SymF(value) => value
       case _ => throw CompileError("fn PARAM must be a name")
     }
+    if (Core.reserved.contains(rawName)) {
+      throw CompileError(s"cannot redefine ${rawName}")
+    }
     val symType = analyzeTypeForm(pType)
 
     (Node.SymLit(rawName, symType), symType)
@@ -230,8 +250,8 @@ object Analyze {
       localBind.get(name)
     } else if (state.moduleVars.contains(name)) {
       state.moduleVars(name)
-    } else if (Core.symbols.contains(name)) {
-      Core.symbols(name).eType
+    } else if (Core.builtins.contains(name)) {
+      Core.builtins(name).eType
     } else {
       throw CompileError(s"symbol ${name} not found")
     }

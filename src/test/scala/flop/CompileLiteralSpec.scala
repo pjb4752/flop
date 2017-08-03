@@ -21,6 +21,18 @@ class CompileLiteralSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn("testnum") should equal("testnum")
       }
+
+      describe("when the symbol is a builtin var") {
+        it("should produce the correct lua") { f =>
+          f.compileFn("true") should equal("true")
+        }
+      }
+
+      describe("when the symbol is a special form") {
+        it("should fail to compile") { f =>
+          an [Analyze.CompileError] should be thrownBy(f.compileFn("def"))
+        }
+      }
     }
   }
 }
