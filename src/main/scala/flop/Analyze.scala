@@ -2,8 +2,12 @@ package flop
 
 object Analyze {
 
-  case class State(isModuleLevel: Boolean, moduleVars: Map[String, Type],
-      localVars: List[Map[String, Type]]) {
+  case class State(isModuleLevel: Boolean, moduleTraits: Map[String, List[Node.FnDef]],
+      moduleVars: Map[String, Type], localVars: List[Map[String, Type]]) {
+
+    def insertModuleTrait(name: String, fnDefs: List[Node.FnDef]) = {
+      this.copy(moduleTraits = moduleTraits + (name -> fnDefs))
+    }
 
     def insertModuleVar(name: String, vType: Type): State = {
       this.copy(moduleVars = moduleVars + (name -> vType))
@@ -22,6 +26,7 @@ object Analyze {
       val newNode = tryAnalyze(state)(f)
       val newState = newNode match {
         case Node.DefN(n, _, r) => state.insertModuleVar(n.value, r)
+        case Node.TraitN(n, f) => state.insertModuleTrait(n.value, f)
         case _ => state
       }
       (newState, newNode :: nodes)
@@ -42,8 +47,15 @@ object Analyze {
     if (Core.specialForms.contains(name)) {
       throw CompileError(s"cannot take value of special form ${name}")
     }
-    val eType = lookupSymbolType(state, name)
-    Node.SymLit(name, eType)
+
+    name match {
+      case "true" => Node.TrueLit
+      case "false" => Node.FalseLit
+      case _ => {
+        val eType = lookupSymbolType(state, name)
+        Node.SymLit(name, eType)
+      }
+    }
   }
 
   private def analyzeList(state: State, list: List[Form]): Node = list match {
@@ -63,6 +75,7 @@ object Analyze {
       case "if" => analyzeIf(state, args)
       case "fn" => analyzeFunction(state, args)
       case "list" => analyzeListForm(state, args)
+      case "trait" => analyzeTrait(state, args)
       case _ => analyzeApply(state, s, args)
     }
     case u => throw CompileError(s"cannot apply ${u}")
@@ -135,7 +148,8 @@ object Analyze {
       throw CompileError(s"actual return type ${body.eType} does not match expected ${rType}")
     }
 
-    Node.FlopFn(params, rType, body)
+    val fnType = Type.FreeFn(params.map(_._2), rType)
+    Node.FlopFn(fnType, params, body)
   }
 
   private def analyzeListForm(state: State, args: List[Form]): Node = {
@@ -143,15 +157,78 @@ object Analyze {
     Node.ListLit(args.map(analyzeFn))
   }
 
+  private def analyzeTrait(state: State, args: List[Form]): Node = {
+    if (args.length != 2) {
+      throw CompileError("invalid trait form, expected (trait NAME FNDEFS")
+    } else if (!args.head.isInstanceOf[Form.SymF]) {
+      throw CompileError("trait expects first arg to be a name")
+    } else if (!state.isModuleLevel) {
+      throw CompileError("trait must occur at module (top) level")
+    } else {
+      val symbolText = args.head.asInstanceOf[Form.SymF].value
+      if (Core.builtinTraits.keys.toSet.contains(symbolText)) {
+        throw CompileError(s"cannot redefine trait ${symbolText}")
+      } else if (state.moduleTraits.contains(symbolText)) {
+        throw CompileError(s"cannot redefine trait ${symbolText}")
+      }
+      val symbol = Node.SymLit(symbolText, Type.Trait)
+      val fnDefs = analyzeFnDefs(symbol, args(1))
+
+      Node.TraitN(symbol, fnDefs)
+    }
+  }
+
   private def analyzeApply(state: State, op: String, args: List[Form]): Node = {
-    val symType = lookupSymbolType(state, op)
-    val fnType = symType match {
-      case a: Type.Fn => a
+    lookupSymbolType(state, op) match {
+      case ff: Type.FreeFn => analyzeApplyFreeFn(state, op, ff, args)
+      case lf: Type.LuaFn => analyzeApplyLuaFn(state, op, lf, args)
+      case tf: Type.TraitFn => analyzeApplyTraitFn(state, op, tf, args)
       case t => throw CompileError(s"attempt to apply ${op} which is type ${t}")
     }
+  }
 
+  private def analyzeApplyFreeFn(state: State, op: String, fnType: Type.FreeFn,
+       args: List[Form]): Node = {
+    val arguments = analyzeArguments(state, op, fnType, args)
+
+    Node.FlopApply(op, arguments, fnType.rType)
+  }
+
+  private def analyzeApplyLuaFn(state: State, op: String, fnType: Type.LuaFn,
+      args: List[Form]): Node = {
+    val arguments = analyzeArguments(state, op, fnType, args)
+    val luaFn = Core.builtins(op).asInstanceOf[Node.LuaFn]
+
+    Node.LuaApply(luaFn, arguments, fnType.rType)
+  }
+
+  private def analyzeApplyTraitFn(state: State, op: String,
+      fnType: Type.TraitFn, args: List[Form]): Node = {
+
+    // TODO For now we assume that any trait takes "self" as first param
+    // but in the future we'll need to type annotate somehow for traitFns
+    // that might not take a self parameter, or come up with another solution
+    val arguments = analyzeArguments(state, op, fnType, args, Some(0))
+    val selfType = arguments.head
+    val traitImpl = findTraitImpl(state, op, selfType.eType)
+
+    if (traitImpl.isEmpty) {
+      throw CompileError(s"No implementation of trait FN '${op}' for type ${selfType.eType}")
+    }
+
+    // at this point none of this should blow up
+    val fnImpl = traitImpl.get.fnImpls.find(_._1.value == op).get._2
+    val rType = fnImpl.rType
+
+    fnImpl match {
+      case lf: Node.LuaFn => Node.LuaApply(lf, arguments, rType)
+      case ff: Node.FlopFn => Node.FlopApply(op, arguments, rType)
+    }
+  }
+
+  private def analyzeArguments(state: State, op: String, fnType: Type.Fn,
+      args: List[Form], selfPos: Option[Int] = None): List[Node] = {
     val arity = fnType.pTypes.length
-
     if (args.length != arity) {
       throw CompileError(s"arity mismatch in ${op}, expected ${arity}, got ${args.length}")
     }
@@ -163,23 +240,14 @@ object Analyze {
         case _ => arg.eType
       }
       val pType = fnType.pTypes(i)
-      if (pType != aType) {
+      if (selfPos.nonEmpty && selfPos.get == i) {
+        // don't check type of selfType
+      } else if (pType != aType) {
         throw CompileError(s"param ${i} expected type ${pType}, got ${aType}")
       }
     }
 
-    if (Core.builtins.contains(op)) {
-      val node = Core.builtins(op)
-      node.eType match {
-        case _:Type.Fn => {
-          val builtinFn = node.asInstanceOf[Node.LuaFn]
-          Node.LuaApply(builtinFn, arguments, fnType.rType)
-        }
-        case t => throw CompileError(s"expected fn type, but ${op} is type ${t}")
-      }
-    } else {
-      Node.FlopApply(op, arguments, fnType.rType)
-    }
+    arguments
   }
 
   private def analyzeTypeForm(form: Form): Type = form match {
@@ -244,6 +312,35 @@ object Analyze {
     (Node.SymLit(rawName, symType), symType)
   }
 
+  private def analyzeFnDefs(traitName: Node.SymLit, form: Form): List[Node.FnDef] = {
+    val rawDefs = form match {
+      case Form.MapF(raw) => raw
+      case _ => throw CompileError("FNDEFS must be a map of (NAME FNDEF)")
+    }
+
+    rawDefs.map({ case (n, f) => analyzeFnDef(traitName, n, f) }).toList
+  }
+
+  private def analyzeFnDef(traitName: Node.SymLit, fName: Form, fnDef: Form): Node.FnDef = {
+    val rawName = fName match {
+      case Form.SymF(value) => value
+      case _ => throw CompileError("FNDEF must be a (NAME DEF) pair")
+    }
+    val rawFnDef = fnDef match {
+      case Form.ListF(values) => values
+      case _ => throw CompileError("FNDEF must be a (NAME DEF) pair")
+    }
+    if (rawFnDef.length < 1) {
+      throw CompileError("invalid FNDEF form, expected (RETURN [PARAMS])")
+    }
+
+    val types = rawFnDef.map(analyzeTypeForm)
+    val fnType = Type.TraitFn(types.tail, types.head)
+    val fnName = Node.SymLit(rawName, fnType)
+
+    Node.FnDef(traitName, fnName, fnType)
+  }
+
   private def lookupSymbolType(state: State, name: String): Type = {
     val localBind = state.localVars.find(_.contains(name))
 
@@ -254,7 +351,27 @@ object Analyze {
     } else if (Core.builtins.contains(name)) {
       Core.builtins(name).eType
     } else {
-      throw CompileError(s"symbol ${name} not found")
+      val maybeFn = findTraitFnType(state, name)
+
+      if (maybeFn.nonEmpty) {
+        maybeFn.get
+      } else {
+        throw CompileError(s"symbol ${name} not found")
+      }
     }
+  }
+
+  private def findTraitFnDef(state: State, name: String): Option[Node.FnDef] = {
+    Core.builtinTraits.flatMap(_._2).
+        find({ case Node.FnDef(_, n, _) => n.value == name })
+  }
+
+  private def findTraitFnType(state: State, name: String): Option[Type] = {
+    findTraitFnDef(state, name).map({ case Node.FnDef(_, _, t) => t })
+  }
+
+  private def findTraitImpl(state: State, name: String, selfType: Type):
+      Option[Node.TraitImpl] = {
+    Core.traitImpls.get(name).flatMap(_.get(selfType))
   }
 }

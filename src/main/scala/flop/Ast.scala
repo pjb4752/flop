@@ -42,23 +42,20 @@ object Node {
 
   case class IfN(test: Node, ifExpr: Node, elseExpr: Node, eType: Type) extends Node
 
-  abstract class FnN(pTypes: List[Type], rType: Type) extends Node {
-    val eType = Type.Fn(pTypes, rType)
+  abstract class FnN(eType: Type.Fn) extends Node {
+    val pTypes = eType.pTypes
+    val rType = eType.rType
   }
 
-  case class FlopFn(params: Params, rType: Type, expr: Node)
-      extends FnN(params.map(_._2), rType)
+  case class FlopFn(eType: Type.Fn, params: Params, expr: Node) extends FnN(eType)
 
-  abstract class LuaFn(pTypes: List[Type], rType: Type, val name: String)
-      extends FnN(pTypes, rType) {
+  abstract class LuaFn(eType: Type.Fn) extends FnN(eType) {
+    val name: String
     val arity = pTypes.length
   }
 
-  case class LuaIFn(pTypes: List[Type], rType: Type, override val name: String)
-      extends LuaFn(pTypes, rType, name)
-
-  case class LuaPFn(pTypes: List[Type], rType: Type, override val name: String)
-      extends LuaFn(pTypes, rType, name)
+  case class LuaIFn(eType: Type.Fn, val name: String) extends LuaFn(eType)
+  case class LuaPFn(eType: Type.Fn, val name: String) extends LuaFn(eType)
 
   abstract class ApplyN(args: List[Node], eType: Type) extends Node
 
@@ -67,4 +64,15 @@ object Node {
 
   case class FlopApply(name: String, args: List[Node], eType: Type)
     extends ApplyN(args, eType)
+
+  case class FnDef(traitName: SymLit, fnName: SymLit, eType: Type) extends Node
+
+  case class TraitN(name: SymLit, fnDefs: List[FnDef]) extends Node {
+    val eType = Type.Trait
+  }
+
+  case class TraitImpl(targetType: Type, traitName: SymLit,
+      fnImpls: Map[SymLit, FnN]) extends Node {
+    val eType = Type.Trait
+  }
 }

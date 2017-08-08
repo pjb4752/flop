@@ -52,5 +52,5 @@ object Main extends App {
     finalState
   }
 
-  repl(Analyze.State(true, Map[String, Type](), Nil))
+  repl(Analyze.State(true, Map[String, List[Node.FnDef]](), Map[String, Type](), Nil))
 }

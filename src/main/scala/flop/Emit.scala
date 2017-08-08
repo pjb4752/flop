@@ -29,6 +29,8 @@ object Emit {
     nodes.map(tryEmit(state)).mkString("\n")
 
   private def tryEmit(state: State)(node: Node): String = node match {
+    case Node.TrueLit => "true"
+    case Node.FalseLit => "false"
     case Node.NumLit(v) => v.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
     case Node.SymLit(v, _) => v
@@ -37,9 +39,12 @@ object Emit {
     case Node.DefN(n, v, _) => emitDef(state, n, v)
     case Node.LetN(b, e, _) => emitLet(state, b, e)
     case Node.IfN(t, i, e, _) => emitIf(state, t, i, e)
-    case Node.FlopFn(p, _, e) => emitFunction(state, p, e)
+    case Node.FlopFn(_, p, e) => emitFunction(state, p, e)
     case Node.LuaApply(fn, args, _) => emitLuaApply(state, fn, args)
     case Node.FlopApply(n, args, _) => emitFlopApply(state, n, args)
+    case Node.TraitN(_, _) => ""
+    case Node.TraitImpl(_, _, _) => ""
+    case n => throw new Exception(s"emit ${n}???")
   }
 
   // TODO handle complex expression in list members, like let form
@@ -98,8 +103,8 @@ object Emit {
   }
 
   private def emitLuaApply(state: State, fn: Node.LuaFn, args: List[Node]): String = fn match {
-    case Node.LuaIFn(p, r, n) => emitInfixApply(state, n, args(0), args(1))
-    case Node.LuaPFn(p, r, n) => emitPrefixApply(state, n, args)
+    case Node.LuaIFn(_, n) => emitInfixApply(state, n, args(0), args(1))
+    case Node.LuaPFn(_, n) => emitPrefixApply(state, n, args)
   }
 
   private def emitFlopApply(state: State, name: String, args: List[Node]): String = {
