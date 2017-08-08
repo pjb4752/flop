@@ -42,9 +42,19 @@ object Core {
       )
   )
 
+  val boolShowImpl = Node.TraitImpl(
+    Type.Boolean,
+    Node.SymLit("show", Type.Trait),
+    Map[Node.SymLit, Node.FnN](
+      Node.SymLit("str", showStrType) ->
+      Node.LuaPFn(showStrType, "bool_to_s")
+    )
+  )
+
   val traitImpls = Map[String, Map[Type, Node.TraitImpl]](
     "str" -> Map(
-      Type.Number -> numShowImpl
+      Type.Number -> numShowImpl,
+      Type.Boolean -> boolShowImpl
     )
   )
 
