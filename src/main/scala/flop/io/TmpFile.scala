@@ -1,4 +1,4 @@
-package flop
+package flop.io
 
 import java.io.{BufferedWriter, File, FileWriter, IOException}
 

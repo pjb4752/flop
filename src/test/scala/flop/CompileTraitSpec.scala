@@ -2,6 +2,8 @@ package flop
 
 import org.scalatest._
 
+import flop.analysis.CompileError
+
 class CompileTraitSpec extends BaseCompileSpec {
 
   describe("compiling trait definition") {
@@ -13,14 +15,14 @@ class CompileTraitSpec extends BaseCompileSpec {
       describe("the existing trait is builtin") {
         it("should fail to compile") { f =>
           val flopSource = "(trait show {str (num str)})"
-          an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+          an [CompileError] should be thrownBy(f.compileFn(flopSource))
         }
       }
 
       describe("the existing trait is user-defined") {
         it("should fail to compile") { f =>
           val flopSource = "(trait show {str (num str)}) (trait show {str (str str)})"
-          an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+          an [CompileError] should be thrownBy(f.compileFn(flopSource))
         }
       }
     }
@@ -29,7 +31,7 @@ class CompileTraitSpec extends BaseCompileSpec {
       describe("attempt to def inside a def") {
         it("should raise a compilation error") { f =>
           val flopSource = "(let (x 5) (trait Foo {str (num num)}))"
-          an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+          an [CompileError] should be thrownBy(f.compileFn(flopSource))
         }
       }
     }

@@ -1,10 +1,8 @@
-package flop
+package flop.reading
 
 import scala.collection.immutable.ListMap
 
-object Read {
-
-  case class SyntaxError(val message: String) extends Exception(message)
+object Reading {
 
   def read(input: List[Char]): List[Form] = {
     @scala.annotation.tailrec

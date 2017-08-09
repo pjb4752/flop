@@ -2,6 +2,8 @@ package flop
 
 import org.scalatest._
 
+import flop.analysis.CompileError
+
 class CompileFnSpec extends BaseCompileSpec {
 
   describe("compiling fn special form") {
@@ -61,14 +63,14 @@ class CompileFnSpec extends BaseCompileSpec {
     describe("the reserved name is a special form") {
       it("should fail to compile") { f =>
         val flopSource = "(fn num {x num def num} (+ x def))"
-        an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+        an [CompileError] should be thrownBy(f.compileFn(flopSource))
       }
     }
 
     describe("the reserved name is a builtin") {
       it("should fail to compile") { f =>
         val flopSource = "(fn num {x num true num} (+ x true))"
-        an [Analyze.CompileError] should be thrownBy(f.compileFn(flopSource))
+        an [CompileError] should be thrownBy(f.compileFn(flopSource))
       }
     }
   }

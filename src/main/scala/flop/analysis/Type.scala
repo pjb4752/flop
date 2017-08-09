@@ -1,4 +1,4 @@
-package flop
+package flop.analysis
 
 sealed trait Type
 

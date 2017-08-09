@@ -2,6 +2,8 @@ package flop
 
 import org.scalatest._
 
+import flop.analysis.CompileError
+
 class CompileLiteralSpec extends BaseCompileSpec {
 
   describe("compiling literals") {
@@ -30,7 +32,7 @@ class CompileLiteralSpec extends BaseCompileSpec {
 
       describe("when the symbol is a special form") {
         it("should fail to compile") { f =>
-          an [Analyze.CompileError] should be thrownBy(f.compileFn("def"))
+          an [CompileError] should be thrownBy(f.compileFn("def"))
         }
       }
     }

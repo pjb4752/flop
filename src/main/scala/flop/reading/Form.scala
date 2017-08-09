@@ -1,4 +1,4 @@
-package flop
+package flop.reading
 
 sealed trait Form
 

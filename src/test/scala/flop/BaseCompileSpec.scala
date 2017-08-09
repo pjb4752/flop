@@ -2,7 +2,11 @@ package flop
 
 import org.scalatest._
 
-class BaseCompileSpec extends fixture.FunSpec with Matchers with Compilable {
+import analysis.{Analysis, Node, State => AState, Type}
+import backend.{Backend, State => EState}
+import reading.{Reading}
+
+class BaseCompileSpec extends fixture.FunSpec with Matchers {
 
   case class FixtureParam(compileFn: String => String)
 
@@ -16,11 +20,18 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers with Compilable {
       "value?" -> Type.FreeFn(List(Type.Number, Type.Number), Type.Boolean))
     val localVars = List[Map[String, Type]]()
 
-    val analyzeState = Analyze.State(true, moduleTraits, moduleVars, localVars)
-    val emitState = Emit.State(0, 0, 0)
-    val compileFn = compile(analyzeState, emitState) _
+    val analysisState = AState(true, moduleTraits, moduleVars, localVars)
+    val emitState = EState.initial
+    val compileFn = compile(analysisState, emitState) _
     val fixture = FixtureParam(compileFn)
 
     withFixture(test.toNoArgTest(fixture))
+  }
+
+  private def compile(analysisState: AState, emitState: EState)(source: String): String = {
+    val forms = Reading.read(source)
+    val (_, ast) = Analysis.analyze(analysisState, forms)
+
+    Backend.emit(ast, emitState)
   }
 }
