@@ -1,10 +1,10 @@
-package flop
+package flop.integration
 
 import org.scalatest._
 
-import analysis.{Analysis, Node, State => AState, Type}
-import backend.{Backend, State => EState}
-import reading.{Reading}
+import flop.analysis.{Analysis, Node, State => AState, Type}
+import flop.backend.{Backend, State => EState}
+import flop.reading.{Reading}
 
 class BaseCompileSpec extends fixture.FunSpec with Matchers {
 

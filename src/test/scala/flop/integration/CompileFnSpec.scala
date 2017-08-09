@@ -1,4 +1,4 @@
-package flop
+package flop.integration
 
 import org.scalatest._
 
