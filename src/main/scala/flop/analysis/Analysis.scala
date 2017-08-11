@@ -7,18 +7,26 @@ import flop.stdlib.Core
 object Analysis {
 
   def analyze(state: State, forms: List[Form]): (State, List[Node]) = {
-    val (newState, nodes) = forms.foldLeft((state, List[Node]()))({
-        case ((state, nodes), f) =>
-      val newNode = tryAnalyze(state)(f)
-      val newState = newNode match {
-        case Node.DefN(n, _, r) => state.insertModuleVar(n.value, r)
-        case Node.TraitN(n, f) => state.insertModuleTrait(n.value, f)
-        case _ => state
-      }
+    val initial = (state, List[Node]())
+
+    val (newState, nodes) = forms.foldLeft(initial)({ case ((state, nodes), form) =>
+      val newNode = tryAnalyze(state)(form)
+      val newState = updateModule(state, newNode)
       (newState, newNode :: nodes)
     })
 
     (newState, nodes.reverse)
+  }
+
+  private def updateModule(state: State, node: Node): State = node match {
+    case Node.DefN(s, _, t) => State.addVar(state, s.strValue, t)
+    case Node.TraitN(s, f) => {
+      val fnDefs = f.map({ case (k, v) =>
+        (k.strValue, Module.FnDef(k.strValue, v)) }
+      ).toMap
+      State.addTrait(state, s.strValue, fnDefs)
+    }
+    case _ => state
   }
 
   private def tryAnalyze(state: State)(form: Form): Node = form match {
@@ -50,7 +58,7 @@ object Analysis {
   }
 
   private def analyzeMap(state: State, map: Map[Form, Form]): Node = {
-    val analyzeFn = tryAnalyze(state.copy(isModuleLevel = false)) _
+    val analyzeFn = tryAnalyze(state.copy(atModuleLevel = false)) _
     Node.MapLit(map.map({ case (k ,v) => (analyzeFn(k), analyzeFn(v)) }))
   }
 
@@ -72,11 +80,11 @@ object Analysis {
       throw CompileError("invalid def form, expected (def SYM EXPR)")
     } else if (!args.head.isInstanceOf[Form.SymF]) {
       throw CompileError("def expects first arg to be a name")
-    } else if (!state.isModuleLevel) {
+    } else if (!state.atModuleLevel) {
       throw CompileError("def must occur at module (top) level")
     } else {
       val symbolText = args(0).asInstanceOf[Form.SymF].value
-      val expr = tryAnalyze(state.copy(isModuleLevel = false))(args(1))
+      val expr = tryAnalyze(state.copy(atModuleLevel = false))(args(1))
 
       if (Core.reserved.contains(symbolText)) {
         throw CompileError(s"cannot redefine ${symbolText}")
@@ -93,8 +101,8 @@ object Analysis {
     } else {
       val bindings = analyzeBindings(state, args(0))
       val symbols = bindings.map({ case (s, e) => (s.value -> e.eType) }).toMap
-      val newState = state.insertLocalScope(symbols)
-      val expr = tryAnalyze(newState.copy(isModuleLevel = false))(args(1))
+      val newState = State.addScope(state, symbols)
+      val expr = tryAnalyze(newState.copy(atModuleLevel = false))(args(1))
 
       Node.LetN(bindings, expr, expr.eType)
     }
@@ -104,7 +112,7 @@ object Analysis {
     if (args.length != 3) {
       throw CompileError("invalid if form, expected (if TEST IF-EXPR ELSE-EXPR)")
     } else {
-      val analyzed = args.map(tryAnalyze(state.copy(isModuleLevel = false)))
+      val analyzed = args.map(tryAnalyze(state.copy(atModuleLevel = false)))
       val testType = analyzed(0).eType
       val ifType = analyzed(1).eType
       val elseType = analyzed(2).eType
@@ -127,8 +135,8 @@ object Analysis {
     val rType = analyzeTypeForm(args(0))
     val params = analyzeParams(args(1))
     val symbols = params.map({ case (s, t) => (s.value -> t) }).toMap
-    val newState = state.insertLocalScope(symbols)
-    val body = tryAnalyze(newState.copy(isModuleLevel = false))(args(2))
+    val newState = State.addScope(state, symbols)
+    val body = tryAnalyze(newState.copy(atModuleLevel = false))(args(2))
 
     if (body.eType != rType) {
       throw CompileError(s"actual return type ${body.eType} does not match expected ${rType}")
@@ -139,7 +147,7 @@ object Analysis {
   }
 
   private def analyzeListForm(state: State, args: List[Form]): Node = {
-    val analyzeFn = tryAnalyze(state.copy(isModuleLevel = false)) _
+    val analyzeFn = tryAnalyze(state.copy(atModuleLevel = false)) _
     Node.ListLit(args.map(analyzeFn))
   }
 
@@ -148,14 +156,13 @@ object Analysis {
       throw CompileError("invalid trait form, expected (trait NAME FNDEFS")
     } else if (!args.head.isInstanceOf[Form.SymF]) {
       throw CompileError("trait expects first arg to be a name")
-    } else if (!state.isModuleLevel) {
+    } else if (!state.atModuleLevel) {
       throw CompileError("trait must occur at module (top) level")
     } else {
       val symbolText = args.head.asInstanceOf[Form.SymF].value
-      if (Core.builtinTraits.keys.toSet.contains(symbolText)) {
-        throw CompileError(s"cannot redefine trait ${symbolText}")
-      } else if (state.moduleTraits.contains(symbolText)) {
-        throw CompileError(s"cannot redefine trait ${symbolText}")
+
+      if (state.currentModule.traits.contains(symbolText)) {
+        throw CompileError(s"trait ${symbolText} already defined in this module")
       }
       val symbol = Node.SymLit(symbolText, Type.Trait)
       val fnDefs = analyzeFnDefs(symbol, args(1))
@@ -219,7 +226,7 @@ object Analysis {
       throw CompileError(s"arity mismatch in ${op}, expected ${arity}, got ${args.length}")
     }
 
-    val arguments = args.map(tryAnalyze(state.copy(isModuleLevel = false)))
+    val arguments = args.map(tryAnalyze(state.copy(atModuleLevel = false)))
     for ((arg, i) <- arguments.zipWithIndex) {
       val aType = arg match {
         case Node.SymLit(v, _) => lookupSymbolType(state, v)
@@ -266,7 +273,7 @@ object Analysis {
       throw CompileError("BIND expects first value to be a name")
     } else {
       val symbolText = forms(0).asInstanceOf[Form.SymF].value
-      val expr = tryAnalyze(state.copy(isModuleLevel = false))(forms(1))
+      val expr = tryAnalyze(state.copy(atModuleLevel = false))(forms(1))
       if (Core.reserved.contains(symbolText)) {
         throw CompileError(s"cannot redefine ${symbolText}")
       }
@@ -298,16 +305,16 @@ object Analysis {
     (Node.SymLit(rawName, symType), symType)
   }
 
-  private def analyzeFnDefs(traitName: Node.SymLit, form: Form): List[Node.FnDef] = {
+  private def analyzeFnDefs(traitName: Node.SymLit, form: Form): Map[Node.SymLit, Node.FnDef] = {
     val rawDefs = form match {
       case Form.MapF(raw) => raw
       case _ => throw CompileError("FNDEFS must be a map of (NAME FNDEF)")
     }
 
-    rawDefs.map({ case (n, f) => analyzeFnDef(traitName, n, f) }).toList
+    rawDefs.map({ case (n, f) => analyzeFnDef(traitName, n, f) }).toMap
   }
 
-  private def analyzeFnDef(traitName: Node.SymLit, fName: Form, fnDef: Form): Node.FnDef = {
+  private def analyzeFnDef(traitName: Node.SymLit, fName: Form, fnDef: Form): (Node.SymLit, Node.FnDef) = {
     val rawName = fName match {
       case Form.SymF(value) => value
       case _ => throw CompileError("FNDEF must be a (NAME DEF) pair")
@@ -324,16 +331,16 @@ object Analysis {
     val fnType = Type.TraitFn(types.tail, types.head)
     val fnName = Node.SymLit(rawName, fnType)
 
-    Node.FnDef(traitName, fnName, fnType)
+    (fnName, Node.FnDef(traitName, fnName, fnType))
   }
 
   private def lookupSymbolType(state: State, name: String): Type = {
-    val localBind = state.localVars.find(_.contains(name))
+    val localBind = state.scopes.find(_.contains(name))
 
     if (localBind.nonEmpty) {
       localBind.get(name)
-    } else if (state.moduleVars.contains(name)) {
-      state.moduleVars(name)
+    } else if (state.currentModule.vars.contains(name)) {
+      state.currentModule.vars(name).eType
     } else if (Core.builtins.contains(name)) {
       Core.builtins(name).eType
     } else {

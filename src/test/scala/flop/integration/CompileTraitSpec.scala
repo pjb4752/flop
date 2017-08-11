@@ -12,13 +12,6 @@ class CompileTraitSpec extends BaseCompileSpec {
     }
 
     describe("attempts to redefine existing traits") {
-      describe("the existing trait is builtin") {
-        it("should fail to compile") { f =>
-          val flopSource = "(trait show {str (num str)})"
-          an [CompileError] should be thrownBy(f.compileFn(flopSource))
-        }
-      }
-
       describe("the existing trait is user-defined") {
         it("should fail to compile") { f =>
           val flopSource = "(trait show {str (num str)}) (trait show {str (str str)})"

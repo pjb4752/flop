@@ -26,7 +26,9 @@ object Node {
     val eType = Type.String
   }
 
-  case class SymLit(val value: String, val eType: Type) extends Node
+  case class SymLit(value: String, val eType: Type) extends Node {
+    val strValue = value
+  }
 
   case class ListLit(value: List[Node]) extends Node {
     val eType = Type.List
@@ -67,7 +69,7 @@ object Node {
 
   case class FnDef(traitName: SymLit, fnName: SymLit, eType: Type) extends Node
 
-  case class TraitN(name: SymLit, fnDefs: List[FnDef]) extends Node {
+  case class TraitN(name: SymLit, fnDefs: Map[SymLit, FnDef]) extends Node {
     val eType = Type.Trait
   }
 
