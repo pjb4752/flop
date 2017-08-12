@@ -3,25 +3,17 @@ package flop.io
 import scala.io.StdIn
 import scala.sys.process._
 
-import flop.analysis.{Analysis, CompileError, State => AState}
+import flop.analysis.{Analysis, CompileError, ModuleTree}
 import flop.backend.{Backend, State => EState}
 import flop.reading.{Reading, SyntaxError}
 
 object Repl {
 
-  case class State(analysisState: AState, emitState: EState)
-
-  case object State {
-
-    def initial: State = {
-      State(AState.initial, EState.initial)
-    }
-  }
-
-  def repl(debug: Boolean = true): Unit = doRepl(State.initial, debug)
+  def repl(debug: Boolean = true): Unit =
+    doRepl(ModuleTree.newRoot("user"), debug)
 
   @scala.annotation.tailrec
-  def doRepl(state: State, debug: Boolean): Unit = {
+  def doRepl(tree: ModuleTree, debug: Boolean): Unit = {
     val line = StdIn.readLine("%s", "-> ")
 
     if (line == null || line == "(exit)") {
@@ -29,13 +21,13 @@ object Repl {
     } else if (line.isEmpty) {
       println("")
     } else {
-      val newState = eval(line, state, debug)
-      doRepl(newState, debug)
+      val newTree = eval(line, tree, debug)
+      doRepl(newTree, debug)
     }
   }
 
-  private def eval(line: String, state: State, debug: Boolean): State = {
-    var finalState = state
+  private def eval(line: String, tree: ModuleTree, debug: Boolean): ModuleTree = {
+    var finalTree = tree
 
     try {
       val forms = Reading.read(line)
@@ -44,7 +36,7 @@ object Repl {
         println(forms)
       }
 
-      val (newAState, nodes) = Analysis.analyze(state.analysisState, forms)
+      val nodes = Analysis.analyze(tree, forms)
       if (debug) {
         println("--- ast nodes ---")
         println(nodes)
@@ -68,11 +60,11 @@ object Repl {
           println(s)
         }
       })
-      finalState = state.copy(analysisState = newAState)
+      finalTree = tree
     } catch {
       case SyntaxError(m) => println(s"Syntax Error: ${m}")
       case CompileError(m) => println(s"Compile Error: ${m}")
     }
-    finalState
+    finalTree
   }
 }

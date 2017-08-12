@@ -27,7 +27,7 @@ object Reading {
   private val digits = List('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
   private val symbolStartChars = ('a' to 'z').toList ++ ('A' to 'Z').toList ++
       List('_', '+', '-', '*', '/', '>', '<', '=')
-  private val symbolChars = symbolStartChars ++ digits ++ List('!', '?')
+  private val symbolChars = symbolStartChars ++ digits ++ List('!', '?', '/')
 
   private def tryRead(input: List[Char]): (List[Char], Form) = {
     val char = input.head
