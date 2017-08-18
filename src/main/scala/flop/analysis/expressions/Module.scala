@@ -1,15 +1,11 @@
 package flop.analysis.expressions
 
-import flop.analysis.{CompileError, ModuleTree, Node, State, Type}
+import flop.analysis._
 import flop.analysis.Node._
 import flop.reading.Form
 import flop.reading.Form._
 
 object Module {
-
-  sealed trait Error {
-    val message: String
-  }
 
   object Error {
     case object NestedDefinitionError extends Error {

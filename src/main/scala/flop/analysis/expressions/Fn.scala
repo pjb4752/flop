@@ -8,9 +8,34 @@ import flop.stdlib.Core
 
 object Fn {
 
+  type FlopError = flop.analysis.Error
+
+  case object SyntaxError extends FlopError {
+    val message = """fn expressions must be of the form:
+                    |  (fn RETURN-TYPE PARAM EXPR)""".stripMargin
+  }
+
+  case class ReturnTypeError(formal: Type, actual: Type) extends FlopError {
+    val message = s"""fn return types do not match:
+                     |  expected: ${formal}, actual: ${actual}""".stripMargin
+  }
+
+  case object ParamSyntaxError extends FlopError {
+    val message = """fn PARAM expressions must be of the form:
+                    |  {NAME TYPE}""".stripMargin
+  }
+
+  case object BadNameError extends FlopError {
+    val message = "fn PARAM must be a name"
+  }
+
+  case class DoubleDefineError(name: String) extends FlopError {
+    val message = s"def error: cannot redefine var ${name}"
+  }
+
   def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
     if (args.length != 3) {
-      throw CompileError("invalid fn form, expected (fn RETURN PARAM EXPR)")
+      throw CompileError(SyntaxError)
     }
 
     val rType = SymbolTable.analyzeTypeForm(tree, args(0))
@@ -20,7 +45,7 @@ object Fn {
     val body = newState.analyzeFn(tree, newState.copy(atTopLevel = false))(args(2))
 
     if (body.eType != rType) {
-      throw CompileError(s"actual return type ${body.eType} does not match expected ${rType}")
+      throw CompileError(ReturnTypeError(body.eType, rType))
     }
 
     val fnType = Type.FreeFn(params.map(_._2), rType)
@@ -30,7 +55,7 @@ object Fn {
   private def analyzeParams(tree: ModuleTree, form: Form): Node.Params = {
     val rawParams = form match {
       case Form.MapF(raw) => raw
-      case _ => throw CompileError("fn PARAM must be a map of (NAME TYPE)")
+      case _ => throw CompileError(ParamSyntaxError)
     }
 
     rawParams.map({ case (n, t) => analyzeParam(tree, n, t) }).toList
@@ -39,10 +64,10 @@ object Fn {
   private def analyzeParam(tree: ModuleTree, pName: Form, pType: Form): Node.Param = {
     val rawName = pName match {
       case Form.SymF(value) => value
-      case _ => throw CompileError("fn PARAM must be a name")
+      case _ => throw CompileError(BadNameError)
     }
     if (Core.reserved.contains(rawName)) {
-      throw CompileError(s"cannot redefine ${rawName}")
+      throw CompileError(DoubleDefineError(rawName))
     }
     val symType = SymbolTable.analyzeTypeForm(tree, pType)
 

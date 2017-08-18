@@ -5,6 +5,17 @@ import flop.stdlib.Core
 
 object SymbolTable {
 
+  type FlopError = flop.analysis.Error
+
+  case class UndefinedError(name: String) extends FlopError {
+    val message = s"symbol ${name} not found"
+  }
+
+  case class UnknownTypeError(typeName: String) extends FlopError {
+    val message = s"unknown type ${typeName}"
+  }
+
+
   def lookupType(tree: ModuleTree, state: State, name: String): Type = {
     val localBind = state.localScopes.find(_.contains(name))
 
@@ -21,7 +32,7 @@ object SymbolTable {
       if (maybeFn.nonEmpty) {
         maybeFn.get
       } else {
-        throw CompileError(s"symbol ${name} not found")
+        throw CompileError(UndefinedError(name))
       }
     }
   }
@@ -43,7 +54,7 @@ object SymbolTable {
   // TODO put this elsewhere
   def analyzeTypeForm(tree: ModuleTree, form: Form): Type = form match {
     case Form.SymF(s) => analyzeTypeLiteral(tree, s)
-    case t => throw CompileError(s"unknown type: ${t}")
+    case t => throw CompileError(UnknownTypeError(t.toString))
   }
 
   def analyzeTypeLiteral(tree: ModuleTree, lit: String): Type = lit match {
@@ -52,7 +63,7 @@ object SymbolTable {
     case "num" => Type.Number
     case "str" => Type.String
     case "sym" => Type.Symbol
-    case t => throw CompileError(s"unknown type: ${t}")
+    case t => throw CompileError(UnknownTypeError(t))
   }
 
 }

@@ -8,6 +8,16 @@ import flop.analysis.expressions._
 
 object Analysis {
 
+  type FlopError = flop.analysis.Error
+
+  case class SpecialFormValueError(form: String) extends FlopError {
+    val message = s"cannot take value of special form ${form}"
+  }
+
+  case class NonFnError(form: Form) extends FlopError {
+    val message = s"cannot apply non-callable ${form}"
+  }
+
   def analyze(tree: ModuleTree, forms: List[Form]): List[Node] = {
     val state = State(true, "user", tryAnalyze)
     forms.map(tryAnalyze(tree, state))
@@ -23,7 +33,7 @@ object Analysis {
 
   private def analyzeSymbol(tree: ModuleTree, state: State, name: String): Node = {
     if (Core.specialForms.contains(name)) {
-      throw CompileError(s"cannot take value of special form ${name}")
+      throw CompileError(SpecialFormValueError(name))
     }
 
     name match {
@@ -56,6 +66,6 @@ object Analysis {
       case "list" => ListExpr.analyze(tree, state, args)
       case _ => Apply.analyze(tree, state, s, args)
     }
-    case u => throw CompileError(s"cannot apply ${u}")
+    case u => throw CompileError(NonFnError(u))
   }
 }

@@ -8,9 +8,33 @@ import flop.stdlib.Core
 
 object Let {
 
+  type FlopError = flop.analysis.Error
+
+  case object SyntaxError extends FlopError {
+    val message = """let expressions must be of the form:
+                    |  (let BIND EXPR)""".stripMargin
+  }
+
+  case object BindSyntaxError extends FlopError {
+    val message = """let BIND expressions must be of the form:
+                    |  (NAME EXPR NAME EXPR)""".stripMargin
+  }
+
+  case object BindTermError extends FlopError {
+    val message = "let BIND expressions have an even number of terms"
+  }
+
+  case object BindNameError extends FlopError {
+    val message = "let BIND expects first value to be a name"
+  }
+
+  case class DoubleDefineError(name: String) extends FlopError {
+    val message = s"def error: cannot redefine var ${name}"
+  }
+
   def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
     if (args.length != 2) {
-      throw CompileError("invalid let form, expected (let BIND EXPR)")
+      throw CompileError(SyntaxError)
     } else {
       val bindings = analyzeBindings(tree, state, args(0))
       val symbols = bindings.map({ case (s, e) => (s.value -> e.eType) }).toMap
@@ -24,22 +48,22 @@ object Let {
   private def analyzeBindings(tree: ModuleTree, state: State, form: Form): List[(Node.SymLit, Node)] = {
     val rawBindings = form match {
       case Form.ListF(raw) => raw
-      case _ => throw CompileError("BIND must be a list of SYM EXPR pairs")
+      case _ => throw CompileError(BindSyntaxError)
     }
     if (rawBindings.length % 2 != 0) {
-      throw CompileError("BIND must have even number of terms")
+      throw CompileError(BindTermError)
     }
     rawBindings.grouped(2).map(analyzeBinding(tree, state)).toList
   }
 
   private def analyzeBinding(tree: ModuleTree, state: State)(forms: List[Form]): (Node.SymLit, Node) = {
     if (!forms.head.isInstanceOf[Form.SymF]) {
-      throw CompileError("BIND expects first value to be a name")
+      throw CompileError(BindNameError)
     } else {
       val symbolText = forms(0).asInstanceOf[Form.SymF].value
       val expr = state.analyzeFn(tree, state.copy(atTopLevel = false))(forms(1))
       if (Core.reserved.contains(symbolText)) {
-        throw CompileError(s"cannot redefine ${symbolText}")
+        throw CompileError(DoubleDefineError(symbolText))
       }
       val symbol = Node.SymLit(symbolText, expr.eType)
 

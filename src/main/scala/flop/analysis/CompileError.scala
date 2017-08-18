@@ -1,3 +1,7 @@
 package flop.analysis
 
-case class CompileError(val message: String) extends Exception(message)
+trait Error {
+  val message: String
+}
+
+case class CompileError(error: Error) extends Exception(error.message)
