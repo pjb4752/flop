@@ -33,7 +33,7 @@ object Trait {
                     |  (RETURN-TYPE {PARAMS})""".stripMargin
   }
 
-  def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
+  def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (!state.atTopLevel) {
       throw CompileError(NestedDefinitionError)
     } else if (args.length != 2) {
@@ -50,22 +50,22 @@ object Trait {
       //}
       val name = ModuleName(state.currentTree, state.currentPaths, symbolText)
       val symbol = Node.SymLit(name, Type.Trait)
-      val fnDefs = analyzeFnDefs(tree, state, symbol, args(1))
+      val fnDefs = analyzeFnDefs(table, state, symbol, args(1))
 
       Node.TraitN(symbol, fnDefs)
     }
   }
 
-  private def analyzeFnDefs(tree: ModuleTree, state: State, traitName: Node.SymLit, form: Form): Map[Node.SymLit, Node.FnDef] = {
+  private def analyzeFnDefs(table: SymbolTable, state: State, traitName: Node.SymLit, form: Form): Map[Node.SymLit, Node.FnDef] = {
     val rawDefs = form match {
       case Form.MapF(raw) => raw
       case _ => throw CompileError(FnDefsError)
     }
 
-    rawDefs.map({ case (n, f) => analyzeFnDef(tree, state, traitName, n, f) }).toMap
+    rawDefs.map({ case (n, f) => analyzeFnDef(table, state, traitName, n, f) }).toMap
   }
 
-  private def analyzeFnDef(tree: ModuleTree, state: State, traitName: Node.SymLit, fName: Form, fnDef: Form): (Node.SymLit, Node.FnDef) = {
+  private def analyzeFnDef(table: SymbolTable, state: State, traitName: Node.SymLit, fName: Form, fnDef: Form): (Node.SymLit, Node.FnDef) = {
     val rawName = fName match {
       case Form.SymF(value) => value
       case _ => throw CompileError(FnDefsError)
@@ -78,7 +78,7 @@ object Trait {
       throw CompileError(FnDefError)
     }
 
-    val types = rawFnDef.map(t => SymbolTable.analyzeTypeForm(tree, t))
+    val types = rawFnDef.map(t => SymbolTable.analyzeTypeForm(table, t))
     val fnType = Type.TraitFn(types.tail, types.head)
     val name = ModuleName(state.currentTree, state.currentPaths, rawName)
     val fnName = Node.SymLit(name, fnType)

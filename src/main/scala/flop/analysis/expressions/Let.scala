@@ -33,20 +33,20 @@ object Let {
     val message = s"def error: cannot redefine var ${name}"
   }
 
-  def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
+  def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (args.length != 2) {
       throw CompileError(SyntaxError)
     } else {
-      val bindings = analyzeBindings(tree, state, args(0))
+      val bindings = analyzeBindings(table, state, args(0))
       val symbols = bindings.map({ case (s, e) => (s.name.name -> e.eType) }).toMap
       val newState = state.copy(localScopes = symbols :: state.localScopes)
-      val expr = newState.analyzeFn(tree, newState.copy(atTopLevel = false))(args(1))
+      val expr = newState.analyzeFn(table, newState.copy(atTopLevel = false))(args(1))
 
       Node.LetN(bindings, expr, expr.eType)
     }
   }
 
-  private def analyzeBindings(tree: ModuleTree, state: State, form: Form): List[(Node.SymLit, Node)] = {
+  private def analyzeBindings(table: SymbolTable, state: State, form: Form): List[(Node.SymLit, Node)] = {
     val rawBindings = form match {
       case Form.ListF(raw) => raw
       case _ => throw CompileError(BindSyntaxError)
@@ -54,15 +54,15 @@ object Let {
     if (rawBindings.length % 2 != 0) {
       throw CompileError(BindTermError)
     }
-    rawBindings.grouped(2).map(analyzeBinding(tree, state)).toList
+    rawBindings.grouped(2).map(analyzeBinding(table, state)).toList
   }
 
-  private def analyzeBinding(tree: ModuleTree, state: State)(forms: List[Form]): (Node.SymLit, Node) = {
+  private def analyzeBinding(table: SymbolTable, state: State)(forms: List[Form]): (Node.SymLit, Node) = {
     if (!forms.head.isInstanceOf[Form.SymF]) {
       throw CompileError(BindNameError)
     } else {
       val symbolText = forms(0).asInstanceOf[Form.SymF].value
-      val expr = state.analyzeFn(tree, state.copy(atTopLevel = false))(forms(1))
+      val expr = state.analyzeFn(table, state.copy(atTopLevel = false))(forms(1))
 
       if (SymbolTable.isReservedName(symbolText)) {
         throw CompileError(RedefineError(symbolText))

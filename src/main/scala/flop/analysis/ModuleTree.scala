@@ -35,8 +35,6 @@ case object ModuleTree {
   def newRoot(name: String) = ModuleTree(name, Map[String, MNode]())
 
   def isValidPath(tree: ModuleTree, paths: List[String]): Boolean = {
-    assert(paths.nonEmpty)
-
     //TODO @scala.annotation.tailrec
     def isValid(node: Option[MNode], paths: List[String]): Boolean = {
       node.map(maybeNode =>
@@ -48,7 +46,7 @@ case object ModuleTree {
       ).getOrElse(false)
     }
 
-    isValid(tree.children.get(paths.head), paths.tail)
+    paths.nonEmpty && isValid(tree.children.get(paths.head), paths.tail)
   }
 
   def findModule(tree: ModuleTree, paths: List[String]): Option[Module] = {

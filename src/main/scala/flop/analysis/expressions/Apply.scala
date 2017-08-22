@@ -32,49 +32,49 @@ object Apply {
     val message = s"param ${i} expected type ${formal}, got ${actual}"
   }
 
-  def analyze(tree: ModuleTree, state: State, op: String, args: List[Form]): Node = {
-    val maybeName = SymbolTable.lookupName(tree, state, op)
+  def analyze(table: SymbolTable, state: State, op: String, args: List[Form]): Node = {
+    val maybeName = SymbolTable.lookupName(table, state, op)
 
     if (maybeName.isEmpty) {
       throw CompileError(SymbolTable.UndefinedError(op))
     }
 
     val name = maybeName.get
-    SymbolTable.lookupType(tree, state, name) match {
-      case ff: Type.FreeFn => analyzeApplyFreeFn(tree, state, name, ff, args)
-      case lf: Type.LuaFn => analyzeApplyLuaFn(tree, state, name, lf, args)
+    SymbolTable.lookupType(table, state, name) match {
+      case ff: Type.FreeFn => analyzeApplyFreeFn(table, state, name, ff, args)
+      case lf: Type.LuaFn => analyzeApplyLuaFn(table, state, name, lf, args)
       // TODO put this back
-      //case tf: Type.TraitFn => analyzeApplyTraitFn(tree, state, name, tf, args)
+      //case tf: Type.TraitFn => analyzeApplyTraitFn(table, state, name, tf, args)
       case t => throw CompileError(ApplyError(op, t))
     }
   }
 
-  private def analyzeApplyFreeFn(tree: ModuleTree, state: State, op: Name, fnType: Type.FreeFn,
+  private def analyzeApplyFreeFn(table: SymbolTable, state: State, op: Name, fnType: Type.FreeFn,
        args: List[Form]): Node = {
-    val arguments = analyzeArguments(tree, state, op, fnType, args)
+    val arguments = analyzeArguments(table, state, op, fnType, args)
 
     Node.FlopApply(op, arguments, fnType.rType)
   }
 
-  private def analyzeApplyLuaFn(tree: ModuleTree, state: State, op: Name, fnType: Type.LuaFn,
+  private def analyzeApplyLuaFn(table: SymbolTable, state: State, op: Name, fnType: Type.LuaFn,
       args: List[Form]): Node = {
-    val arguments = analyzeArguments(tree, state, op, fnType, args)
+    val arguments = analyzeArguments(table, state, op, fnType, args)
     // TODO it should alread exist here since checked above
-    val moduleVar = SymbolTable.lookupVar(tree, op).get
+    val moduleVar = SymbolTable.lookupVar(table, op).get
     val luaFn = moduleVar.node.asInstanceOf[Node.LuaFn]
 
     Node.LuaApply(luaFn, arguments, fnType.rType)
   }
 
-  //private def analyzeApplyTraitFn(tree: ModuleTree, state: State, op: Name,
+  //private def analyzeApplyTraitFn(table: SymbolTable, state: State, op: Name,
       //fnType: Type.TraitFn, args: List[Form]): Node = {
 
     //// TODO For now we assume that any trait takes "self" as first param
     //// but in the future we'll need to type annotate somehow for traitFns
     //// that might not take a self parameter, or come up with another solution
-    //val arguments = analyzeArguments(tree, state, op, fnType, args, Some(0))
+    //val arguments = analyzeArguments(table, state, op, fnType, args, Some(0))
     //val selfType = arguments.head
-    //val traitImpl = SymbolTable.findTraitImpl(tree, state, op, selfType.eType)
+    //val traitImpl = SymbolTable.findTraitImpl(table, state, op, selfType.eType)
 
     //if (traitImpl.isEmpty) {
       //throw CompileError(UnimplementedError(op.toString, selfType.eType))
@@ -90,17 +90,17 @@ object Apply {
     //}
   //}
 
-  private def analyzeArguments(tree: ModuleTree, state: State, op: Name, fnType: Type.Fn,
+  private def analyzeArguments(table: SymbolTable, state: State, op: Name, fnType: Type.Fn,
       args: List[Form], selfPos: Option[Int] = None): List[Node] = {
     val arity = fnType.pTypes.length
     if (args.length != arity) {
       throw CompileError(ArityMismatchError(op.toString, arity, args.length))
     }
 
-    val arguments = args.map(state.analyzeFn(tree, state.copy(atTopLevel = false)))
+    val arguments = args.map(state.analyzeFn(table, state.copy(atTopLevel = false)))
     for ((arg, i) <- arguments.zipWithIndex) {
       val aType = arg match {
-        case Node.SymLit(v, _) => SymbolTable.lookupType(tree, state, v)
+        case Node.SymLit(v, _) => SymbolTable.lookupType(table, state, v)
         case _ => arg.eType
       }
       val pType = fnType.pTypes(i)

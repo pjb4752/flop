@@ -34,17 +34,16 @@ object Fn {
     val message = s"def error: cannot redefine var ${name}"
   }
 
-  def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
+  def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (args.length != 3) {
       throw CompileError(SyntaxError)
     }
 
-    val rType = SymbolTable.analyzeTypeForm(tree, args(0))
-    val params = analyzeParams(tree, args(1))
+    val rType = SymbolTable.analyzeTypeForm(table, args(0))
+    val params = analyzeParams(table, args(1))
     val symbols = params.map({ case (s, t) => (s.name.name -> t) }).toMap
     val newState = state.copy(localScopes = symbols :: state.localScopes)
-    println(newState)
-    val body = newState.analyzeFn(tree, newState.copy(atTopLevel = false))(args(2))
+    val body = newState.analyzeFn(table, newState.copy(atTopLevel = false))(args(2))
 
     if (body.eType != rType) {
       throw CompileError(ReturnTypeError(body.eType, rType))
@@ -54,16 +53,16 @@ object Fn {
     Node.FlopFn(fnType, params, body)
   }
 
-  private def analyzeParams(tree: ModuleTree, form: Form): Node.Params = {
+  private def analyzeParams(table: SymbolTable, form: Form): Node.Params = {
     val rawParams = form match {
       case Form.MapF(raw) => raw
       case _ => throw CompileError(ParamSyntaxError)
     }
 
-    rawParams.map({ case (n, t) => analyzeParam(tree, n, t) }).toList
+    rawParams.map({ case (n, t) => analyzeParam(table, n, t) }).toList
   }
 
-  private def analyzeParam(tree: ModuleTree, pName: Form, pType: Form): Node.Param = {
+  private def analyzeParam(table: SymbolTable, pName: Form, pType: Form): Node.Param = {
     val rawName = pName match {
       case Form.SymF(value) => value
       case _ => throw CompileError(BadNameError)
@@ -72,7 +71,7 @@ object Fn {
     if (SymbolTable.isReservedName(rawName)) {
       throw CompileError(RedefienError(rawName))
     }
-    val symType = SymbolTable.analyzeTypeForm(tree, pType)
+    val symType = SymbolTable.analyzeTypeForm(table, pType)
     val localName = LocalName(rawName)
 
     (Node.SymLit(localName, symType), symType)

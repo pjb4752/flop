@@ -32,7 +32,7 @@ object Def {
     val message = s"def error: cannot redefine reserved name ${name}"
   }
 
-  def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
+  def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (!state.atTopLevel) {
       throw CompileError(NestedDefinitionError)
     } else if (args.length != 2) {
@@ -42,7 +42,7 @@ object Def {
     } else {
       val symbolText = args(0).asInstanceOf[Form.SymF].value
       val newState = state.copy(atTopLevel = false)
-      val expr = newState.analyzeFn(tree, newState)(args(1))
+      val expr = newState.analyzeFn(table, newState)(args(1))
 
       if (symbolText.contains(".")) {
         throw CompileError(QualifiedNameError)

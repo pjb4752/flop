@@ -27,16 +27,17 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
     )
     val testModule = Module("testm", traits, vars)
     val moduleTree = ModuleTree("user", Map("testm" -> testModule))
+    val symbolTable = SymbolTable.withRoot(moduleTree.name)
 
-    val compileFn = compile(moduleTree) _
+    val compileFn = compile(symbolTable) _
     val fixture = FixtureParam(compileFn)
 
     withFixture(test.toNoArgTest(fixture))
   }
 
-  private def compile(tree: ModuleTree)(source: String): String = {
+  private def compile(table: SymbolTable)(source: String): String = {
     val forms = Reading.read(source)
-    val ast = Analysis.analyze(tree, forms)
+    val ast = Analysis.analyze(table, forms)
 
     Backend.emit(ast)
   }

@@ -33,9 +33,62 @@ object Core {
   /*
    * Definition of 'common' vars
    */
+
+  /*
+   * Math functions
+   */
   val plusName = Name.ModuleName(coreName, commonPath, "+")
   val plusType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
   val plusVar = ModuleTree.Module.Var(plusName.name, Node.LuaIFn(plusType, "+"))
+
+  val minusName = Name.ModuleName(coreName, commonPath, "-")
+  val minusType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
+  val minusVar = ModuleTree.Module.Var(minusName.name, Node.LuaIFn(minusType, "-"))
+
+  val multName = Name.ModuleName(coreName, commonPath, "*")
+  val multType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
+  val multVar = ModuleTree.Module.Var(multName.name, Node.LuaIFn(multType, "*"))
+
+  val divName = Name.ModuleName(coreName, commonPath, "/")
+  val divType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
+  val divVar = ModuleTree.Module.Var(divName.name, Node.LuaIFn(divType, "/"))
+
+  /*
+   * Equality functions TODO make this a trait
+   */
+  val eqName = Name.ModuleName(coreName, commonPath, "=")
+  val eqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
+  val eqVar = ModuleTree.Module.Var(eqName.name, Node.LuaIFn(eqType, "="))
+
+  val neqName = Name.ModuleName(coreName, commonPath, "<>")
+  val neqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
+  val neqVar = ModuleTree.Module.Var(neqName.name, Node.LuaIFn(neqType, "~="))
+
+  /*
+   * Comparison functions TODO make this a trait
+   */
+  val gtName = Name.ModuleName(coreName, commonPath, ">")
+  val gtType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
+  val gtVar = ModuleTree.Module.Var(gtName.name, Node.LuaIFn(gtType, ">"))
+
+  val gteName = Name.ModuleName(coreName, commonPath, ">=")
+  val gteType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
+  val gteVar = ModuleTree.Module.Var(gteName.name, Node.LuaIFn(gteType, ">="))
+
+  val ltName = Name.ModuleName(coreName, commonPath, "<")
+  val ltType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
+  val ltVar = ModuleTree.Module.Var(ltName.name, Node.LuaIFn(ltType, "<"))
+
+  val lteName = Name.ModuleName(coreName, commonPath, "<=")
+  val lteType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
+  val lteVar = ModuleTree.Module.Var(lteName.name, Node.LuaIFn(lteType, "<="))
+
+  /*
+   * IO functions TODO make this is a trait?
+   */
+  val printName = Name.ModuleName(coreName, commonPath, "print")
+  val printType = Type.LuaFn(List(Type.String), Type.Unit)
+  val printVar = ModuleTree.Module.Var(printName.name, Node.LuaPFn(printType, "print"))
 
   /*
    * Definition of 'common' module
@@ -45,7 +98,17 @@ object Core {
       showName.name -> showTrait
     ),
     Map(
-      plusName.name -> plusVar
+      plusName.name -> plusVar,
+      minusName.name -> minusVar,
+      multName.name -> multVar,
+      divName.name -> divVar,
+      eqName.name -> eqVar,
+      neqName.name -> neqVar,
+      gtName.name -> gtVar,
+      gteName.name -> gteVar,
+      ltName.name -> ltVar,
+      lteName.name -> lteVar,
+      printName.name -> printVar
     )
   )
 
@@ -57,23 +120,6 @@ object Core {
       commonName -> commonModule
     )
   )
-
-  //val builtins = Map[String, Node](
-    //"true" -> Node.TrueLit,
-    //"false" -> Node.FalseLit,
-    //"+" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Number), "+"),
-    //"-" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Number), "-"),
-    //"*" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Number), "*"),
-    //"/" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Number), "/"),
-    //">" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean), ">"),
-    //"<" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean), "<"),
-    //"=" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean), "=="),
-    //">=" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean), ">="),
-    //"<=" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean), "<="),
-    //"<>" -> Node.LuaIFn(Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean), "~="),
-    //"print" -> Node.LuaPFn(Type.LuaFn(List(Type.String), Type.Unit), "print"),
-    //"num_to_s" -> Node.LuaPFn(Type.TraitFn(List(Type.Number), Type.String), "num_to_s")
-  //)
 
   //val showStrType = Type.TraitFn(List(Type.Self), Type.String)
 

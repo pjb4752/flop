@@ -18,53 +18,53 @@ object Analysis {
     val message = s"cannot apply non-callable ${form}"
   }
 
-  def analyze(tree: ModuleTree, forms: List[Form]): List[Node] = {
-    val state = State(tryAnalyze, true, "user")
+  def analyze(table: SymbolTable, forms: List[Form]): List[Node] = {
+    val state = State(tryAnalyze, true, "user", List("default"))
 
-    // modify ModuleTree here by adding Vars and Traits
-    forms.map(tryAnalyze(tree, state))
+    // modify SymbolTable here by adding Vars and Traits
+    forms.map(tryAnalyze(table, state))
   }
 
-  private def tryAnalyze(tree: ModuleTree, state: State)(form: Form): Node = form match {
+  private def tryAnalyze(table: SymbolTable, state: State)(form: Form): Node = form match {
     case Form.NumF(v) => Node.NumLit(v)
     case Form.StrF(v) => Node.StrLit(v)
-    case Form.SymF(v) => analyzeSymbol(tree, state, v)
-    case Form.ListF(l) => analyzeList(tree, state, l)
-    case Form.MapF(m) => analyzeMap(tree, state, m)
+    case Form.SymF(v) => analyzeSymbol(table, state, v)
+    case Form.ListF(l) => analyzeList(table, state, l)
+    case Form.MapF(m) => analyzeMap(table, state, m)
   }
 
-  private def analyzeSymbol(tree: ModuleTree, state: State, raw: String): Node = {
-    val maybeName = SymbolTable.lookupName(tree, state, raw)
+  private def analyzeSymbol(table: SymbolTable, state: State, raw: String): Node = {
+    val maybeName = SymbolTable.lookupName(table, state, raw)
 
     if (maybeName.isEmpty) {
       throw CompileError(UndefinedError(raw))
     } else {
       val name = maybeName.get
-      val eType = SymbolTable.lookupType(tree, state, name)
+      val eType = SymbolTable.lookupType(table, state, name)
 
       Node.SymLit(name, eType)
     }
   }
 
-  private def analyzeList(tree: ModuleTree, state: State, list: List[Form]): Node = list match {
-    case op :: args => analyzeOp(tree, state, op, args)
+  private def analyzeList(table: SymbolTable, state: State, list: List[Form]): Node = list match {
+    case op :: args => analyzeOp(table, state, op, args)
     case _ => Node.ListLit(List[Node]())
   }
 
-  private def analyzeMap(tree: ModuleTree, state: State, map: Map[Form, Form]): Node = {
-    val analyzeFn = tryAnalyze(tree, state.copy(atTopLevel = false)) _
+  private def analyzeMap(table: SymbolTable, state: State, map: Map[Form, Form]): Node = {
+    val analyzeFn = tryAnalyze(table, state.copy(atTopLevel = false)) _
     Node.MapLit(map.map({ case (k ,v) => (analyzeFn(k), analyzeFn(v)) }))
   }
 
-  private def analyzeOp(tree: ModuleTree, state: State, op: Form, args: List[Form]): Node = op match {
+  private def analyzeOp(table: SymbolTable, state: State, op: Form, args: List[Form]): Node = op match {
     case Form.SymF(s) => s match {
-      case "def" => Def.analyze(tree, state, args)
-      case "let" => Let.analyze(tree, state, args)
-      case "if" => If.analyze(tree, state, args)
-      case "fn" => Fn.analyze(tree, state, args)
-      case "trait" => Trait.analyze(tree, state, args)
-      case "list" => ListExpr.analyze(tree, state, args)
-      case _ => Apply.analyze(tree, state, s, args)
+      case "def" => Def.analyze(table, state, args)
+      case "let" => Let.analyze(table, state, args)
+      case "if" => If.analyze(table, state, args)
+      case "fn" => Fn.analyze(table, state, args)
+      case "trait" => Trait.analyze(table, state, args)
+      case "list" => ListExpr.analyze(table, state, args)
+      case _ => Apply.analyze(table, state, s, args)
     }
     case u => throw CompileError(NonFnError(u))
   }

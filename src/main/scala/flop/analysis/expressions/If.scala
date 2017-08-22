@@ -23,12 +23,12 @@ object If {
                       | ELSE-EXPR type: ${e}""".stripMargin
   }
 
-  def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
+  def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (args.length != 3) {
       throw CompileError(SyntaxError)
     } else {
       val newState = state.copy(atTopLevel = false)
-      val mapFn = newState.analyzeFn(tree, newState)
+      val mapFn = newState.analyzeFn(table, newState)
 
       val analyzed = args.map(mapFn)
       val testType = analyzed(0).eType
