@@ -40,7 +40,7 @@ class CompileDefSpec extends BaseCompileSpec {
 
       describe("when the value is a builtin") {
         it("should fail to compile") { f =>
-          val flopSource = "(def + 5)"
+          val flopSource = "(def true 5)"
           an [CompileError] should be thrownBy(f.compileFn(flopSource))
         }
       }

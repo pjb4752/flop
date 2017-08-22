@@ -26,9 +26,7 @@ object Node {
     val eType = Type.String
   }
 
-  case class SymLit(value: String, val eType: Type) extends Node {
-    val strValue = value
-  }
+  case class SymLit(name: Name, val eType: Type) extends Node
 
   case class ListLit(value: List[Node]) extends Node {
     val eType = Type.List
@@ -64,7 +62,7 @@ object Node {
   case class LuaApply(fn: LuaFn, args: List[Node], eType: Type)
     extends ApplyN(args, eType)
 
-  case class FlopApply(name: String, args: List[Node], eType: Type)
+  case class FlopApply(name: Name, args: List[Node], eType: Type)
     extends ApplyN(args, eType)
 
   case class FnDef(traitName: SymLit, fnName: SymLit, eType: Type) extends Node

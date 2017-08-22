@@ -1,6 +1,6 @@
 package flop.backend
 
-import flop.analysis.Node
+import flop.analysis.{Name, Node}
 
 object Backend {
 
@@ -12,7 +12,7 @@ object Backend {
     case Node.FalseLit => "false"
     case Node.NumLit(v) => v.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
-    case Node.SymLit(v, _) => v
+    case Node.SymLit(n, _) => n.name
     case Node.ListLit(v) => emitList(state, v)
     case Node.MapLit(m) => emitMap(state, m)
     case Node.DefN(n, v, _) => emitDef(state, n, v)
@@ -43,7 +43,7 @@ object Backend {
   }
 
   private def emitDef(state: State, name: Node.SymLit, value: Node): String =
-    s"local ${name.value} = ${tryEmit(state)(value)}"
+    s"local ${name.name.name} = ${tryEmit(state)(value)}"
 
   private def emitLet(state: State, bindings: Node.Bindings, expr: Node): String = {
     val newState = state.nextVarState()
@@ -72,7 +72,7 @@ object Backend {
 
   private def emitFunction(state: State, params: Node.Params, expr: Node): String = {
     val newState = state.nextVarState()
-    val paramNames = params.map(_._1.value).mkString(", ")
+    val paramNames = params.map(_._1.name.name).mkString(", ")
 
     s"""function(${paramNames})
        |local ${newState.varName}
@@ -86,8 +86,8 @@ object Backend {
     case Node.LuaPFn(_, n) => emitPrefixApply(state, n, args)
   }
 
-  private def emitFlopApply(state: State, name: String, args: List[Node]): String = {
-    emitPrefixApply(state, name, args)
+  private def emitFlopApply(state: State, name: Name, args: List[Node]): String = {
+    emitPrefixApply(state, name.name, args)
   }
 
   private def emitExpr(state: State, expr: Node): String = expr match {
@@ -113,13 +113,13 @@ object Backend {
   }
 
   private def emitSimpleBinding(state: State, symbol: Node.SymLit, expr: Node): String = {
-    s"local ${symbol.value} = ${tryEmit(state)(expr)}"
+    s"local ${symbol.name.name} = ${tryEmit(state)(expr)}"
   }
 
   private def emitComplexBinding(state: State, symbol: Node.SymLit, expr: Node): String = {
     val newState = state.nextVarState()
     s"""${tryEmit(state)(expr)}
-       |local ${symbol.value} = ${state.nextVarState().varName}""".stripMargin
+       |local ${symbol.name.name} = ${state.nextVarState().varName}""".stripMargin
   }
 
   private def emitInfixApply(state: State, name: String, left: Node,

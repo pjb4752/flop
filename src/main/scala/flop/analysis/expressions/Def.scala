@@ -1,6 +1,7 @@
 package flop.analysis.expressions
 
 import flop.analysis._
+import flop.analysis.Name._
 import flop.analysis.Node._
 import flop.reading.Form
 import flop.reading.Form._
@@ -23,8 +24,12 @@ object Def {
     val message = "def NAME must be a symbol"
   }
 
-  case class DoubleDefineError(name: String) extends FlopError {
-    val message = s"def error: cannot redefine var ${name}"
+  case object QualifiedNameError extends FlopError {
+    val message = "def NAME must be an unqualified symbol"
+  }
+
+  case class RedefineError(name: String) extends FlopError {
+    val message = s"def error: cannot redefine reserved name ${name}"
   }
 
   def analyze(tree: ModuleTree, state: State, args: List[Form]): Node = {
@@ -39,10 +44,14 @@ object Def {
       val newState = state.copy(atTopLevel = false)
       val expr = newState.analyzeFn(tree, newState)(args(1))
 
-      if (Core.reserved.contains(symbolText)) {
-        throw CompileError(DoubleDefineError(symbolText))
+      if (symbolText.contains(".")) {
+        throw CompileError(QualifiedNameError)
+      } else if (SymbolTable.isReservedName(symbolText)) {
+        throw CompileError(RedefineError(symbolText))
       }
-      val symbol = Node.SymLit(symbolText, expr.eType)
+
+      val name = ModuleName(state.currentTree, state.currentPaths, symbolText)
+      val symbol = Node.SymLit(name, expr.eType)
 
       Node.DefN(symbol, expr, expr.eType)
     }

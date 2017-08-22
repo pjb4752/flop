@@ -2,7 +2,8 @@ package flop.integration
 
 import org.scalatest._
 
-import flop.analysis.{Analysis, Module, Node, State => AState, Type}
+import flop.analysis._
+import flop.analysis.ModuleTree._
 import flop.backend.{Backend, State => EState}
 import flop.reading.{Reading}
 
@@ -13,30 +14,30 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
   def withFixture(test: OneArgTest) = {
     val traits = Map[String, Module.Trait]()
     val vars = Map[String, Module.Var](
-      "testnum" -> Module.Var("testnum", Type.Number),
-      "testnum1" -> Module.Var("testnum1", Type.Number),
-      "testnum2" -> Module.Var("testnum2", Type.Number),
-      "testnum3" -> Module.Var("testnum3", Type.Number),
+      "testnum" -> Module.Var("testnum", Node.NumLit(6)),
+      "testnum1" -> Module.Var("testnum1", Node.NumLit(7)),
+      "testnum2" -> Module.Var("testnum2", Node.NumLit(8)),
+      "testnum3" -> Module.Var("testnum3", Node.NumLit(9)),
       "value?" -> Module.Var("value?",
-          Type.FreeFn(List(Type.Number, Type.Number), Type.Boolean)
+          Node.LuaPFn(
+            Type.FreeFn(List(Type.Number, Type.Number), Type.Boolean),
+            "value__question"
+          )
         )
     )
     val testModule = Module("testm", traits, vars)
+    val moduleTree = ModuleTree("user", Map("testm" -> testModule))
 
-    val modules = Map[String, Module]("testm" -> testModule)
-
-    val analysisState = AState(true, testModule, modules)
-    val emitState = EState.initial
-    val compileFn = compile(analysisState, emitState) _
+    val compileFn = compile(moduleTree) _
     val fixture = FixtureParam(compileFn)
 
     withFixture(test.toNoArgTest(fixture))
   }
 
-  private def compile(analysisState: AState, emitState: EState)(source: String): String = {
+  private def compile(tree: ModuleTree)(source: String): String = {
     val forms = Reading.read(source)
-    val (_, ast) = Analysis.analyze(analysisState, forms)
+    val ast = Analysis.analyze(tree, forms)
 
-    Backend.emit(ast, emitState)
+    Backend.emit(ast)
   }
 }

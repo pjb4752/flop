@@ -1,6 +1,7 @@
 package flop.analysis.expressions
 
-import flop.analysis.{CompileError, ModuleTree, Node, State, Type}
+import flop.analysis._
+import flop.analysis.Name._
 import flop.analysis.Node._
 import flop.reading.Form
 import flop.reading.Form._
@@ -28,7 +29,7 @@ object Let {
     val message = "let BIND expects first value to be a name"
   }
 
-  case class DoubleDefineError(name: String) extends FlopError {
+  case class RedefineError(name: String) extends FlopError {
     val message = s"def error: cannot redefine var ${name}"
   }
 
@@ -37,7 +38,7 @@ object Let {
       throw CompileError(SyntaxError)
     } else {
       val bindings = analyzeBindings(tree, state, args(0))
-      val symbols = bindings.map({ case (s, e) => (s.value -> e.eType) }).toMap
+      val symbols = bindings.map({ case (s, e) => (s.name.name -> e.eType) }).toMap
       val newState = state.copy(localScopes = symbols :: state.localScopes)
       val expr = newState.analyzeFn(tree, newState.copy(atTopLevel = false))(args(1))
 
@@ -62,10 +63,12 @@ object Let {
     } else {
       val symbolText = forms(0).asInstanceOf[Form.SymF].value
       val expr = state.analyzeFn(tree, state.copy(atTopLevel = false))(forms(1))
-      if (Core.reserved.contains(symbolText)) {
-        throw CompileError(DoubleDefineError(symbolText))
+
+      if (SymbolTable.isReservedName(symbolText)) {
+        throw CompileError(RedefineError(symbolText))
       }
-      val symbol = Node.SymLit(symbolText, expr.eType)
+      val localName = LocalName(symbolText)
+      val symbol = Node.SymLit(localName, expr.eType)
 
       (symbol, expr)
     }

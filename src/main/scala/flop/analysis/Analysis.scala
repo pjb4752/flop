@@ -10,8 +10,8 @@ object Analysis {
 
   type FlopError = flop.analysis.Error
 
-  case class SpecialFormValueError(form: String) extends FlopError {
-    val message = s"cannot take value of special form ${form}"
+  case class UndefinedError(name: String) extends FlopError {
+    val message = s"undefined name ${name}"
   }
 
   case class NonFnError(form: Form) extends FlopError {
@@ -19,7 +19,9 @@ object Analysis {
   }
 
   def analyze(tree: ModuleTree, forms: List[Form]): List[Node] = {
-    val state = State(true, "user", tryAnalyze)
+    val state = State(tryAnalyze, true, "user")
+
+    // modify ModuleTree here by adding Vars and Traits
     forms.map(tryAnalyze(tree, state))
   }
 
@@ -31,18 +33,16 @@ object Analysis {
     case Form.MapF(m) => analyzeMap(tree, state, m)
   }
 
-  private def analyzeSymbol(tree: ModuleTree, state: State, name: String): Node = {
-    if (Core.specialForms.contains(name)) {
-      throw CompileError(SpecialFormValueError(name))
-    }
+  private def analyzeSymbol(tree: ModuleTree, state: State, raw: String): Node = {
+    val maybeName = SymbolTable.lookupName(tree, state, raw)
 
-    name match {
-      case "true" => Node.TrueLit
-      case "false" => Node.FalseLit
-      case _ => {
-        val eType = SymbolTable.lookupType(tree, state, name)
-        Node.SymLit(name, eType)
-      }
+    if (maybeName.isEmpty) {
+      throw CompileError(UndefinedError(raw))
+    } else {
+      val name = maybeName.get
+      val eType = SymbolTable.lookupType(tree, state, name)
+
+      Node.SymLit(name, eType)
     }
   }
 

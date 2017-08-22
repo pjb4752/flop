@@ -1,6 +1,7 @@
 package flop.analysis.expressions
 
-import flop.analysis.{CompileError, ModuleTree, Node, State, SymbolTable, Type}
+import flop.analysis._
+import flop.analysis.Name._
 import flop.analysis.Node._
 import flop.reading.Form
 import flop.reading.Form._
@@ -29,7 +30,7 @@ object Fn {
     val message = "fn PARAM must be a name"
   }
 
-  case class DoubleDefineError(name: String) extends FlopError {
+  case class RedefienError(name: String) extends FlopError {
     val message = s"def error: cannot redefine var ${name}"
   }
 
@@ -40,8 +41,9 @@ object Fn {
 
     val rType = SymbolTable.analyzeTypeForm(tree, args(0))
     val params = analyzeParams(tree, args(1))
-    val symbols = params.map({ case (s, t) => (s.value -> t) }).toMap
+    val symbols = params.map({ case (s, t) => (s.name.name -> t) }).toMap
     val newState = state.copy(localScopes = symbols :: state.localScopes)
+    println(newState)
     val body = newState.analyzeFn(tree, newState.copy(atTopLevel = false))(args(2))
 
     if (body.eType != rType) {
@@ -66,11 +68,13 @@ object Fn {
       case Form.SymF(value) => value
       case _ => throw CompileError(BadNameError)
     }
-    if (Core.reserved.contains(rawName)) {
-      throw CompileError(DoubleDefineError(rawName))
+
+    if (SymbolTable.isReservedName(rawName)) {
+      throw CompileError(RedefienError(rawName))
     }
     val symType = SymbolTable.analyzeTypeForm(tree, pType)
+    val localName = LocalName(rawName)
 
-    (Node.SymLit(rawName, symType), symType)
+    (Node.SymLit(localName, symType), symType)
   }
 }
