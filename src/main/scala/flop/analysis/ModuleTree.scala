@@ -6,8 +6,24 @@ case class ModuleTree(name: String, children: Map[String, MNode])
 
 case object ModuleTree {
 
-  case class SubTree(name: String, children: Map[String, MNode]) extends MNode
-  case class Module(name: String, traits: Module.Traits, vars: Module.Vars) extends MNode
+  case class SubTree(
+    name: String,
+    children: Map[String, MNode] = Map[String, MNode]()
+  ) extends MNode
+
+  case class Module(
+    name: String,
+    traits: Module.Traits = Map[String, Module.Trait](),
+    vars: Module.Vars = Map[String, Module.Var]()
+  ) extends MNode
+
+  case class InvalidPathError(path: List[String]) extends flop.analysis.Error {
+    val message = s"""invalid module path: ${path.mkString(".")}"""
+  }
+
+  case class ModuleExistsError(name: String) extends flop.analysis.Error {
+    val message = s"module named ${name} already defined"
+  }
 
   object Module {
     case class Var(name: String, node: Node)
@@ -65,5 +81,34 @@ case object ModuleTree {
     }
 
     find(tree.children.get(paths.head), paths.tail)
+  }
+
+  def addModule(tree: ModuleTree, paths: List[String], module: Module): ModuleTree = {
+    assert(paths.nonEmpty)
+
+    def add(node: MNode, paths: List[String], module: Module): SubTree = {
+      node match {
+        case m: Module => throw CompileError(InvalidPathError(paths))
+        case t: SubTree => {
+          if (paths.isEmpty && t.children.contains(module.name)) {
+            throw CompileError(ModuleExistsError(module.name))
+          } else if (paths.isEmpty) {
+            t.copy(children = t.children + (module.name -> module))
+          } else {
+            val blankTree = SubTree(paths.head)
+            val childTree = t.children.getOrElse(paths.head, blankTree)
+            val newSubTree = add(childTree, paths.tail, module)
+
+            t.copy(children = t.children + (newSubTree.name -> newSubTree))
+          }
+        }
+      }
+    }
+
+    val blankTree = SubTree(paths.head)
+    val subTree = tree.children.getOrElse(paths.head, blankTree)
+    val newSubTree = add(subTree, paths.tail, module)
+
+    tree.copy(children = tree.children + (newSubTree.name -> newSubTree))
   }
 }

@@ -1,5 +1,6 @@
 package flop.analysis
 
+// TODO merge this in with Node.SymLit?
 sealed trait Name {
   val name: String
 }
