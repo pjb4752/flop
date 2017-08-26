@@ -80,6 +80,7 @@ class LetSpec extends BaseAnalysisSpec {
         val expr = Form.NumF(6.0f)
         val args = List(bindings, expr)
 
+        // TODO have a more realistic test scenario
         val ast = Node.LetN(
           List(
             (
