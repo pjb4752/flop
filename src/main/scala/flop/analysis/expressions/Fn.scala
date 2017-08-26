@@ -30,7 +30,7 @@ object Fn {
     val message = "fn PARAM must be a name"
   }
 
-  case class RedefienError(name: String) extends FlopError {
+  case class RedefineError(name: String) extends FlopError {
     val message = s"def error: cannot redefine var ${name}"
   }
 
@@ -69,7 +69,7 @@ object Fn {
     }
 
     if (SymbolTable.isReservedName(rawName)) {
-      throw CompileError(RedefienError(rawName))
+      throw CompileError(RedefineError(rawName))
     }
     val symType = SymbolTable.analyzeTypeForm(table, pType)
     val localName = LocalName(rawName)
