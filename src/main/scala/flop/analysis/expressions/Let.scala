@@ -9,33 +9,11 @@ import flop.stdlib.Core
 
 object Let {
 
-  type FlopError = flop.analysis.Error
-
-  case object SyntaxError extends FlopError {
-    val message = """let expressions must be of the form:
-                    |  (let BIND EXPR)""".stripMargin
-  }
-
-  case object BindSyntaxError extends FlopError {
-    val message = """let BIND expressions must be of the form:
-                    |  (NAME EXPR NAME EXPR)""".stripMargin
-  }
-
-  case object BindTermError extends FlopError {
-    val message = "let BIND expressions have an even number of terms"
-  }
-
-  case object BindNameError extends FlopError {
-    val message = "let BIND expects first value to be a name"
-  }
-
-  case class RedefineError(name: String) extends FlopError {
-    val message = s"def error: cannot redefine var ${name}"
-  }
-
   def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (args.length != 2) {
-      throw CompileError(SyntaxError)
+      val message = s"""Wrong number of terms in let form"
+                       |  expected: 3, actual: ${args.length}""".stripMargin
+      throw syntaxError(message)
     } else {
       val bindings = analyzeBindings(table, state, args(0))
       val symbols = bindings.map({ case (s, e) => (s.name.name -> e.eType) }).toMap
@@ -46,26 +24,46 @@ object Let {
     }
   }
 
+  private def syntaxError(specificMessage: String) = {
+    val genericMessage =
+      """let expressions must be of the form:
+        |  (let BIND EXPR)
+        |  where:
+        |    BIND is of the form:
+        |      (name1 expr1 name2 expr2 namen exprn)
+        |    EXPR is any valid expression""".stripMargin
+
+    CompileError.syntaxError(specificMessage, genericMessage)
+  }
+
   private def analyzeBindings(table: SymbolTable, state: State, form: Form): List[(Node.SymLit, Node)] = {
     val rawBindings = form match {
       case Form.ListF(raw) => raw
-      case _ => throw CompileError(BindSyntaxError)
+      case _ => {
+        val message = s"""let form expects BIND to be a list of values
+                         |  got: ${form}""".stripMargin
+        throw syntaxError(message)
+      }
     }
     if (rawBindings.length % 2 != 0) {
-      throw CompileError(BindTermError)
+      val message = s"""let form expects BIND to have an even number of values
+                        |  got: ${form}""".stripMargin
+      throw syntaxError(message)
     }
     rawBindings.grouped(2).map(analyzeBinding(table, state)).toList
   }
 
   private def analyzeBinding(table: SymbolTable, state: State)(forms: List[Form]): (Node.SymLit, Node) = {
     if (!forms.head.isInstanceOf[Form.SymF]) {
-      throw CompileError(BindNameError)
+      val message = s"""BIND form expects NAME to be a SYMBOL
+                        |  got: ${forms.head}""".stripMargin
+      throw syntaxError(message)
     } else {
       val symbolText = forms(0).asInstanceOf[Form.SymF].value
       val expr = state.analyzeFn(table, state.copy(atTopLevel = false))(forms(1))
 
       if (SymbolTable.isReservedName(symbolText)) {
-        throw CompileError(RedefineError(symbolText))
+        throw CompileError.reservedWordError(symbolText)
       }
       val localName = LocalName(symbolText)
       val symbol = Node.SymLit(localName, expr.eType)

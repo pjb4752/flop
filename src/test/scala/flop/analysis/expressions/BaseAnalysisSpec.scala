@@ -23,14 +23,17 @@ class BaseAnalysisSpec extends fixture.FunSpec with Matchers {
   }
 
   def withFixture(test: OneArgTest) = {
+    val root = "user"
+    val path = List[String]()
     val traits = Map[String, ModuleTree.Module.Trait]()
     val vars = Map[String, ModuleTree.Module.Var](
       "testnum" -> ModuleTree.Module.Var("testnum", Node.NumLit(6)),
     )
-    val testModule = ModuleTree.Module("testm", traits, vars)
-    val moduleTree = ModuleTree("user", Map("testm" -> testModule))
+    val moduleName = "testm"
+    val testModule = ModuleTree.Module(moduleName, root, path, traits, vars)
+    val moduleTree = ModuleTree(root, Map(moduleName -> testModule))
     val symbolTable = SymbolTable.withRoot(moduleTree.name)
-    val state = State(defaultAnalyzeFn, true, "user", List("testm"))
+    val state = State(defaultAnalyzeFn, true, root, List(moduleName))
 
     val fixture = FixtureParam(symbolTable, state)
 

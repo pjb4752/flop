@@ -63,7 +63,7 @@ object Repl {
       finalTable = table
     } catch {
       case SyntaxError(m) => println(s"Syntax Error: ${m}")
-      case CompileError(se) => println(s"Compile Error: ${se.message}")
+      case CompileError(m) => println(s"Compile Error: ${m}")
     }
     finalTable
   }

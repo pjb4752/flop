@@ -9,34 +9,11 @@ import flop.stdlib.Core
 
 object Apply {
 
-  type FlopError = flop.analysis.Error
-
-  case class ApplyError(op: String, opType: Type) extends FlopError {
-    val message = s"attempt to apply ${op} which is type ${opType}"
-  }
-
-  case class UnimplementedError(op: String, selfType: Type) extends FlopError {
-    val message = s"""Error applying trait function:
-                     |Unimplemented FN ${op} for ${selfType}""".stripMargin
-  }
-
-  case class ArityMismatchError(op: String, formal: Int, actual: Int)
-      extends FlopError {
-
-    val message = s"arity mismatch in ${op}, expected ${formal}, got ${actual}"
-  }
-
-  case class ParamTypeError(i: Int, formal: Type, actual: Type)
-      extends FlopError {
-
-    val message = s"param ${i} expected type ${formal}, got ${actual}"
-  }
-
   def analyze(table: SymbolTable, state: State, op: String, args: List[Form]): Node = {
     val maybeName = SymbolTable.lookupName(table, state, op)
 
     if (maybeName.isEmpty) {
-      throw CompileError(SymbolTable.UndefinedError(op))
+      throw CompileError.undefinedError(op)
     }
 
     val name = maybeName.get
@@ -45,7 +22,7 @@ object Apply {
       case lf: Type.LuaFn => analyzeApplyLuaFn(table, state, name, lf, args)
       // TODO put this back
       //case tf: Type.TraitFn => analyzeApplyTraitFn(table, state, name, tf, args)
-      case t => throw CompileError(ApplyError(op, t))
+      case t => throw CompileError.typeError(op, "Function", t)
     }
   }
 
@@ -94,7 +71,8 @@ object Apply {
       args: List[Form], selfPos: Option[Int] = None): List[Node] = {
     val arity = fnType.pTypes.length
     if (args.length != arity) {
-      throw CompileError(ArityMismatchError(op.toString, arity, args.length))
+      val expected = (arity, arity)
+      throw CompileError.argumentError(op.toString, expected, args.length)
     }
 
     val arguments = args.map(state.analyzeFn(table, state.copy(atTopLevel = false)))
@@ -107,7 +85,8 @@ object Apply {
       if (selfPos.nonEmpty && selfPos.get == i) {
         // don't check type of selfType
       } else if (pType != aType) {
-        throw CompileError(ParamTypeError(i, pType, aType))
+        val target = s"${op.toString}, param: ${i}"
+        throw CompileError.typeError(target, pType, aType)
       }
     }
 

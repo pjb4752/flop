@@ -9,45 +9,31 @@ import flop.stdlib.Core
 
 object Def {
 
-  type FlopError = flop.analysis.Error
-
-  case object NestedDefinitionError extends FlopError {
-    val message = "var definitions must occur at the top level"
-  }
-
-  case object SyntaxError extends FlopError {
-    val message = """def expressions must be of the form:
-                    |  (def NAME EXPR)""".stripMargin
-  }
-
-  case object BadNameError extends FlopError {
-    val message = "def NAME must be a symbol"
-  }
-
-  case object QualifiedNameError extends FlopError {
-    val message = "def NAME must be an unqualified symbol"
-  }
-
-  case class RedefineError(name: String) extends FlopError {
-    val message = s"def error: cannot redefine reserved name ${name}"
-  }
-
   def analyze(table: SymbolTable, state: State, args: List[Form]): Node = {
     if (!state.atTopLevel) {
-      throw CompileError(NestedDefinitionError)
+      val message =
+        """Unexpected def form in a nested scope
+          |  var definitions must occur at a module top level""".stripMargin
+      throw syntaxError(message)
     } else if (args.length != 2) {
-      throw CompileError(SyntaxError)
+      val message = s"""Wrong number of terms in def form"
+                       |  expected: 2, actual: ${args.length}""".stripMargin
+      throw syntaxError(message)
     } else if (!args.head.isInstanceOf[Form.SymF]) {
-      throw CompileError(BadNameError)
+      val message = s"""def form expects first term to be a SYMBOL, got:
+                       |  ${args.head}""".stripMargin
+      throw syntaxError(message)
     } else {
       val symbolText = args(0).asInstanceOf[Form.SymF].value
       val newState = state.copy(atTopLevel = false)
       val expr = newState.analyzeFn(table, newState)(args(1))
 
       if (symbolText.contains(".")) {
-        throw CompileError(QualifiedNameError)
+        val message = s"""def form expects NAME to be unqualified, got:
+                         |  ${symbolText}""".stripMargin
+        throw syntaxError(message)
       } else if (SymbolTable.isReservedName(symbolText)) {
-        throw CompileError(RedefineError(symbolText))
+        throw CompileError.reservedWordError(symbolText)
       }
 
       val name = ModuleName(state.currentTree, state.currentPaths, symbolText)
@@ -55,5 +41,16 @@ object Def {
 
       Node.DefN(symbol, expr, expr.eType)
     }
+  }
+
+  private def syntaxError(specificMessage: String) = {
+    val genericMessage =
+      """var definitions must be of the form:
+        |  (def NAME EXPR)
+        |  where:
+        |    NAME is an unqualified SYMBOL
+        |    EXPR is any valid expression that returns a result""".stripMargin
+
+    CompileError.syntaxError(specificMessage, genericMessage)
   }
 }

@@ -8,14 +8,10 @@ import flop.analysis.expressions._
 
 object Analysis {
 
-  type FlopError = flop.analysis.Error
+  def analyzeModule(table: SymbolTable, forms: List[Form]): List[Node] = {
+    val module = Module.analyze(table, forms.head)
 
-  case class UndefinedError(name: String) extends FlopError {
-    val message = s"undefined name ${name}"
-  }
-
-  case class NonFnError(form: Form) extends FlopError {
-    val message = s"cannot apply non-callable ${form}"
+    List[Node]()
   }
 
   def analyze(table: SymbolTable, forms: List[Form]): List[Node] = {
@@ -37,7 +33,7 @@ object Analysis {
     val maybeName = SymbolTable.lookupName(table, state, raw)
 
     if (maybeName.isEmpty) {
-      throw CompileError(UndefinedError(raw))
+      throw CompileError.undefinedError(raw)
     } else {
       val name = maybeName.get
       val eType = SymbolTable.lookupType(table, state, name)
@@ -66,6 +62,10 @@ object Analysis {
       case "list" => ListExpr.analyze(table, state, args)
       case _ => Apply.analyze(table, state, s, args)
     }
-    case u => throw CompileError(NonFnError(u))
+    case u => {
+      val message = s"""Type mismatch
+                       |  ${op} is not a fn or special form""".stripMargin
+      throw CompileError.TypeError(message)
+    }
   }
 }

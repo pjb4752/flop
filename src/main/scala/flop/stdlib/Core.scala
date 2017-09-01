@@ -93,7 +93,10 @@ object Core {
   /*
    * Definition of 'common' module
    */
-  val commonModule = ModuleTree.Module(commonName,
+  val commonModule = ModuleTree.Module(
+    commonName,
+    coreName,
+    List[String](),
     Map(
       showName.name -> showTrait
     ),

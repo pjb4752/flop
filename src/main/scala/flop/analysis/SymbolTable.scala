@@ -19,28 +19,6 @@ object SymbolTable {
     SymbolTable(withStdLib)
   }
 
-  type FlopError = flop.analysis.Error
-
-  case class NameValueError(form: String) extends FlopError {
-    val message = s"cannot take value of special form ${form}"
-  }
-
-  case class UndefinedError(name: String) extends FlopError {
-    val message = s"symbol ${name} not found"
-  }
-
-  case class BadModuleError(paths: List[String]) extends FlopError {
-    val message = s"""module ${paths.mkString(".")} not found"""
-  }
-
-  case class UnknownTypeError(typeName: String) extends FlopError {
-    val message = s"unknown type ${typeName}"
-  }
-
-  case class InvalidVarName(name: String) extends FlopError {
-    val message = s"invalid var name ${name}"
-  }
-
   /*
    * For right now these are special 'syntax' recognized by the compiler,
    * that don't follow standard rules of application
@@ -77,14 +55,17 @@ object SymbolTable {
 
   def lookupVar(table: SymbolTable, name: Name): Option[Var] = name match {
     case m: ModuleName => lookupModuleVar(table, m)
-    case _ => throw CompileError(InvalidVarName(name.toString))
+    case _ => {
+      val message = s"${name} is invalid var name"
+      throw CompileError.nameError(message)
+    }
   }
 
   def lookupQualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     val nameParts = raw.split("\\.").toList
 
     if (SymbolTable.isReservedName(nameParts.last)) {
-      throw CompileError(NameValueError(nameParts.last))
+      throw CompileError.reservedWordError(nameParts.last)
     }
 
     val treeName = nameParts.head
@@ -94,7 +75,8 @@ object SymbolTable {
       SymbolTable.isValidPath(tree, paths)).getOrElse(false)
 
     if (!validPath) {
-      throw CompileError(BadModuleError(nameParts))
+      val message = s"Module name ${nameParts} is not valid"
+      throw CompileError.moduleError(message)
     }
 
     Some(ModuleName(nameParts.head, paths, nameParts.last))
@@ -102,12 +84,12 @@ object SymbolTable {
 
   def lookupUnqualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     if (SymbolTable.isReservedName(raw)) {
-      throw CompileError(NameValueError(raw))
+      throw CompileError.reservedWordError(raw)
     }
 
     val nameParts = lookupRawName(table, state, raw)
     if (nameParts.isEmpty) {
-      throw CompileError(UndefinedError(raw))
+      throw CompileError.undefinedError(raw)
     } else {
       nameParts
     }
@@ -117,7 +99,7 @@ object SymbolTable {
     case m: ModuleName => lookupModuleNameType(table, m)
     case l: LiteralName => lookupLiteralType(table, l)
     case l: LocalName => lookupLocalType(state, l)
-    case _ => throw CompileError(UnknownTypeError(name.name))
+    case _ => throw CompileError.undefinedError(name.name)
   }
 
   private def lookupRawName(table: SymbolTable, state: State, raw: String): Option[Name] = {
@@ -153,7 +135,7 @@ object SymbolTable {
     if (moduleType.nonEmpty) {
       moduleType.get
     } else {
-      throw CompileError(UndefinedError(name.toString))
+      throw CompileError.undefinedError(name.toString)
     }
     // TODO put this back when trait lookup is handled
     //} else {
@@ -173,7 +155,7 @@ object SymbolTable {
     if (literal.nonEmpty) {
       literal.get.eType
     } else {
-      throw CompileError(UndefinedError(name.name))
+      throw CompileError.undefinedError(name.name)
     }
   }
 
@@ -183,7 +165,7 @@ object SymbolTable {
     if (localBinding.nonEmpty) {
       localBinding.get(name.name)
     } else {
-      throw CompileError(UndefinedError(name.name))
+      throw CompileError.undefinedError(name.name)
     }
   }
 
@@ -213,7 +195,7 @@ object SymbolTable {
   // TODO put this elsewhere
   def analyzeTypeForm(table: SymbolTable, form: Form): Type = form match {
     case Form.SymF(s) => analyzeTypeLiteral(table, s)
-    case t => throw CompileError(UnknownTypeError(t.toString))
+    case t => throw CompileError.undefinedError(t.toString)
   }
 
   def analyzeTypeLiteral(table: SymbolTable, lit: String): Type = lit match {
@@ -222,6 +204,6 @@ object SymbolTable {
     case "num" => Type.Number
     case "str" => Type.String
     case "sym" => Type.Symbol
-    case t => throw CompileError(UnknownTypeError(t))
+    case t => throw CompileError.undefinedError(t)
   }
 }

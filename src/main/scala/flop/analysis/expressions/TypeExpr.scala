@@ -11,6 +11,6 @@ object TypeExpr {
   // TODO put this elsewhere
   def analyzeTypeForm(table: SymbolTable, form: Form): Type = form match {
     case Form.SymF(s) => SymbolTable.analyzeTypeLiteral(table, s)
-    case t => throw CompileError(SymbolTable.UnknownTypeError(t.toString))
+    case t => throw CompileError.undefinedError(t.toString)
   }
 }

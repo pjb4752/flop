@@ -13,17 +13,11 @@ case object ModuleTree {
 
   case class Module(
     name: String,
+    root: String,
+    path: List[String],
     traits: Module.Traits = Map[String, Module.Trait](),
     vars: Module.Vars = Map[String, Module.Var]()
   ) extends MNode
-
-  case class InvalidPathError(path: List[String]) extends flop.analysis.Error {
-    val message = s"""invalid module path: ${path.mkString(".")}"""
-  }
-
-  case class ModuleExistsError(name: String) extends flop.analysis.Error {
-    val message = s"module named ${name} already defined"
-  }
 
   object Module {
     case class Var(name: String, node: Node)
@@ -35,8 +29,8 @@ case object ModuleTree {
     case class Trait(name: String, fnDefs: FnDefs)
     type Traits = Map[String, Trait]
 
-    def initial(name: String): Module = {
-      Module(name, Map[String, Trait](), Map[String, Var]())
+    def initial(name: String, root: String, path: List[String] = List[String]()): Module = {
+      Module(name, root, path, Map[String, Trait](), Map[String, Var]())
     }
 
     def addVar(module: Module, newVar: Var) = {
@@ -88,10 +82,14 @@ case object ModuleTree {
 
     def add(node: MNode, paths: List[String], module: Module): SubTree = {
       node match {
-        case m: Module => throw CompileError(InvalidPathError(paths))
+        case m: Module => {
+          val message = s"Module path is invalid: ${paths}"
+          throw CompileError.moduleError(message)
+        }
         case t: SubTree => {
           if (paths.isEmpty && t.children.contains(module.name)) {
-            throw CompileError(ModuleExistsError(module.name))
+            val message = s"Module ${module.name} is already defined"
+            throw CompileError.moduleError(message)
           } else if (paths.isEmpty) {
             t.copy(children = t.children + (module.name -> module))
           } else {

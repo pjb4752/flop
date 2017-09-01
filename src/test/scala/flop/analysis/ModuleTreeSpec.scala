@@ -9,12 +9,12 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
   case class FixtureParam(tree: ModuleTree, childModule: Module)
 
   def withFixture(test: OneArgTest) = {
-    val childModule = Module.initial("module2")
+    val childModule = Module.initial("module2", "root", List("level1"))
 
     val tree = ModuleTree(
       "root",
       Map(
-        "module1" -> Module.initial("module1"),
+        "module1" -> Module.initial("module1", "root"),
         "level1" -> SubTree(
           "level1",
           Map(
@@ -32,8 +32,8 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
     describe("none of the paths exist") {
       it("return a module tree with the correct paths") { f =>
         val tree = ModuleTree.newRoot("test")
-        val module = Module.initial("module")
         val paths = List("path1", "path2")
+        val module = Module.initial("module", "test", paths)
         val expectedTree = ModuleTree(
           "test",
           Map(
@@ -66,12 +66,12 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
             "path1" -> SubTree(
               "path1",
               Map(
-                "other" -> Module.initial("other")
+                "other" -> Module.initial("other", "test", List("path1"))
               )
             )
           )
         )
-        val module = Module.initial("module")
+        val module = Module.initial("module", "test", List("path1", "path2"))
         val paths = List("path1", "path2")
         val expectedTree = ModuleTree(
           "test",
@@ -79,7 +79,7 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
             "path1" -> SubTree(
               "path1",
               Map(
-                "other" -> Module.initial("other"),
+                "other" -> Module.initial("other", "test", List("path1")),
                 "path2" -> SubTree(
                   "path2",
                   Map("module" -> module)
@@ -98,7 +98,7 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
 
     describe("the path is invalid") {
       it("should throw a compile error") { f =>
-        val module = Module.initial("path2")
+        val module = Module.initial("path2", "test", List("path1"))
         val paths = List("path1", "path2")
         val tree = ModuleTree(
           "test",
@@ -119,7 +119,7 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
 
     describe("the module already exists") {
       it("should throw a compile error") { f =>
-        val module = Module.initial("module")
+        val module = Module.initial("module", "test", List("path1", "path2"))
         val paths = List("path1", "path2")
         val tree = ModuleTree(
           "test",
@@ -127,7 +127,7 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
             "path1" -> SubTree(
               "path1",
               Map(
-                "other" -> Module.initial("other"),
+                "other" -> Module.initial("other", "test", List("path1")),
                 "path2" -> SubTree(
                   "path2",
                   Map("module" -> module)
