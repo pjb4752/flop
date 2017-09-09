@@ -5,17 +5,18 @@ import flop.analysis.Node
 
 object Core {
 
+  val rootName = "flop"
   val coreName = "core"
   val commonName = "common"
-  val commonPath = List(commonName)
+  val commonPath = List(coreName, commonName)
 
   /*
    * Definition of 'common' trait Show which allows string conversions
    * Function Defs:
    * str - takes 'self' and returns 'self' as string
    */
-  val showName = Name.ModuleName(coreName, commonPath, "Show")
-  val strName = Name.ModuleName(coreName, commonPath, "str")
+  val showName = Name.ModuleName(rootName, commonPath, "Show")
+  val strName = Name.ModuleName(rootName, commonPath, "str")
   val showStrType = Type.TraitFn(List(Type.Self), Type.String)
   val showTrait = ModuleTree.Module.Trait(showName.name,
     Map(strName.name ->
@@ -37,56 +38,56 @@ object Core {
   /*
    * Math functions
    */
-  val plusName = Name.ModuleName(coreName, commonPath, "+")
+  val plusName = Name.ModuleName(rootName, commonPath, "+")
   val plusType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
   val plusVar = ModuleTree.Module.Var(plusName.name, Node.LuaIFn(plusType, "+"))
 
-  val minusName = Name.ModuleName(coreName, commonPath, "-")
+  val minusName = Name.ModuleName(rootName, commonPath, "-")
   val minusType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
   val minusVar = ModuleTree.Module.Var(minusName.name, Node.LuaIFn(minusType, "-"))
 
-  val multName = Name.ModuleName(coreName, commonPath, "*")
+  val multName = Name.ModuleName(rootName, commonPath, "*")
   val multType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
   val multVar = ModuleTree.Module.Var(multName.name, Node.LuaIFn(multType, "*"))
 
-  val divName = Name.ModuleName(coreName, commonPath, "/")
+  val divName = Name.ModuleName(rootName, commonPath, "/")
   val divType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
   val divVar = ModuleTree.Module.Var(divName.name, Node.LuaIFn(divType, "/"))
 
   /*
    * Equality functions TODO make this a trait
    */
-  val eqName = Name.ModuleName(coreName, commonPath, "=")
+  val eqName = Name.ModuleName(rootName, commonPath, "=")
   val eqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
   val eqVar = ModuleTree.Module.Var(eqName.name, Node.LuaIFn(eqType, "="))
 
-  val neqName = Name.ModuleName(coreName, commonPath, "<>")
+  val neqName = Name.ModuleName(rootName, commonPath, "<>")
   val neqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
   val neqVar = ModuleTree.Module.Var(neqName.name, Node.LuaIFn(neqType, "~="))
 
   /*
    * Comparison functions TODO make this a trait
    */
-  val gtName = Name.ModuleName(coreName, commonPath, ">")
+  val gtName = Name.ModuleName(rootName, commonPath, ">")
   val gtType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
   val gtVar = ModuleTree.Module.Var(gtName.name, Node.LuaIFn(gtType, ">"))
 
-  val gteName = Name.ModuleName(coreName, commonPath, ">=")
+  val gteName = Name.ModuleName(rootName, commonPath, ">=")
   val gteType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
   val gteVar = ModuleTree.Module.Var(gteName.name, Node.LuaIFn(gteType, ">="))
 
-  val ltName = Name.ModuleName(coreName, commonPath, "<")
+  val ltName = Name.ModuleName(rootName, commonPath, "<")
   val ltType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
   val ltVar = ModuleTree.Module.Var(ltName.name, Node.LuaIFn(ltType, "<"))
 
-  val lteName = Name.ModuleName(coreName, commonPath, "<=")
+  val lteName = Name.ModuleName(rootName, commonPath, "<=")
   val lteType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
   val lteVar = ModuleTree.Module.Var(lteName.name, Node.LuaIFn(lteType, "<="))
 
   /*
    * IO functions TODO make this is a trait?
    */
-  val printName = Name.ModuleName(coreName, commonPath, "print")
+  val printName = Name.ModuleName(rootName, commonPath, "print")
   val printType = Type.LuaFn(List(Type.String), Type.Unit)
   val printVar = ModuleTree.Module.Var(printName.name, Node.LuaPFn(printType, "print"))
 
@@ -94,9 +95,8 @@ object Core {
    * Definition of 'common' module
    */
   val commonModule = ModuleTree.Module(
-    commonName,
-    coreName,
-    List[String](),
+    Name.ModuleName(rootName, List[String](coreName), commonName),
+    Map[String, Name.ModuleName](),
     Map(
       showName.name -> showTrait
     ),
@@ -118,9 +118,14 @@ object Core {
   /*
    * Definition of 'core' module tree
    */
-  val library = ModuleTree(coreName,
+  val library = ModuleTree(rootName,
     Map(
-      commonName -> commonModule
+      coreName -> ModuleTree.SubTree(
+        commonName,
+        Map(
+          commonName -> commonModule
+        )
+      )
     )
   )
 

@@ -71,7 +71,7 @@ class DefSpec extends BaseAnalysisSpec {
 
         val ast = Node.DefN(
           Node.SymLit(
-            Name.ModuleName("user", List("testm"), "foo"),
+            Name.ModuleName("user", List("core", "testm"), "foo"),
             Type.Number
           ),
           Node.NumLit(6.0f),

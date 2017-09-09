@@ -8,17 +8,18 @@ import flop.analysis.expressions._
 
 object Analysis {
 
-  def analyzeModule(table: SymbolTable, forms: List[Form]): List[Node] = {
-    val module = Module.analyze(table, forms.head)
-
-    List[Node]()
+  def analyzeModuleDef(table: SymbolTable, header: Form): ModuleTree.Module = {
+    Module.analyze(table, header)
   }
 
-  def analyze(table: SymbolTable, forms: List[Form]): List[Node] = {
-    val state = State(tryAnalyze, true, "user", List("default"))
+  def analyze(table: SymbolTable, module: ModuleTree.Module,
+      forms: List[Form]): (SymbolTable, List[Node]) = {
 
+    val state = State(tryAnalyze, true, module)
     // modify SymbolTable here by adding Vars and Traits
-    forms.map(tryAnalyze(table, state))
+    val ast = forms.map(tryAnalyze(table, state))
+
+    (table, ast)
   }
 
   private def tryAnalyze(table: SymbolTable, state: State)(form: Form): Node = form match {

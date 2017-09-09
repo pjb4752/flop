@@ -5,8 +5,7 @@ import flop.reading.Form
 case class State(
   analyzeFn: (SymbolTable, State) => (Form => Node),
   atTopLevel: Boolean,
-  currentTree: String,
-  currentPaths: List[String],
+  currentModule: ModuleTree.Module,
   localScopes: List[State.Scope] = List[State.Scope]())
 
 // TODO String should be changed to LocalName

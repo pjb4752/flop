@@ -12,9 +12,8 @@ case object ModuleTree {
   ) extends MNode
 
   case class Module(
-    name: String,
-    root: String,
-    path: List[String],
+    name: Name.ModuleName,
+    imports: Map[String, Name.ModuleName],
     traits: Module.Traits = Map[String, Module.Trait](),
     vars: Module.Vars = Map[String, Module.Var]()
   ) extends MNode
@@ -29,8 +28,12 @@ case object ModuleTree {
     case class Trait(name: String, fnDefs: FnDefs)
     type Traits = Map[String, Trait]
 
-    def initial(name: String, root: String, path: List[String] = List[String]()): Module = {
-      Module(name, root, path, Map[String, Trait](), Map[String, Var]())
+    def initial(name: Name.ModuleName): Module = {
+      val initialImports = Map[String, Name.ModuleName]()
+      val initialTraits = Map[String, Trait]()
+      val initialVars = Map[String, Var]()
+
+      Module(name, initialImports, initialTraits, initialVars)
     }
 
     def addVar(module: Module, newVar: Var) = {
@@ -77,8 +80,8 @@ case object ModuleTree {
     find(tree.children.get(paths.head), paths.tail)
   }
 
-  def addModule(tree: ModuleTree, paths: List[String], module: Module): ModuleTree = {
-    assert(paths.nonEmpty)
+  def addModule(tree: ModuleTree, module: Module): ModuleTree = {
+    assert(module.name.paths.nonEmpty)
 
     def add(node: MNode, paths: List[String], module: Module): SubTree = {
       node match {
@@ -87,11 +90,11 @@ case object ModuleTree {
           throw CompileError.moduleError(message)
         }
         case t: SubTree => {
-          if (paths.isEmpty && t.children.contains(module.name)) {
+          if (paths.isEmpty && t.children.contains(module.name.name)) {
             val message = s"Module ${module.name} is already defined"
             throw CompileError.moduleError(message)
           } else if (paths.isEmpty) {
-            t.copy(children = t.children + (module.name -> module))
+            t.copy(children = t.children + (module.name.name -> module))
           } else {
             val blankTree = SubTree(paths.head)
             val childTree = t.children.getOrElse(paths.head, blankTree)
@@ -103,6 +106,7 @@ case object ModuleTree {
       }
     }
 
+    val paths = module.name.paths
     val blankTree = SubTree(paths.head)
     val subTree = tree.children.getOrElse(paths.head, blankTree)
     val newSubTree = add(subTree, paths.tail, module)

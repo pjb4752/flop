@@ -43,6 +43,14 @@ object SymbolTable {
   def isValidPath(tree: ModuleTree, paths: List[String]): Boolean =
     ModuleTree.isValidPath(tree, paths)
 
+  def findModule(table: SymbolTable, tree: String, paths: List[String]): Option[Module] = {
+    table.trees.get(tree).flatMap(t => ModuleTree.findModule(t, paths))
+  }
+
+  def isLoaded(table: SymbolTable, tree: String, paths: List[String]): Boolean = {
+    findModule(table, tree, paths).nonEmpty
+  }
+
   def lookupName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     if (isLiteral(raw)) {
       Some(LiteralName(raw))
@@ -79,7 +87,9 @@ object SymbolTable {
       throw CompileError.moduleError(message)
     }
 
-    Some(ModuleName(nameParts.head, paths, nameParts.last))
+    // first we look in the current module
+    val name = ModuleName(nameParts.head, paths, nameParts.last)
+    lookupVar(table, name).map(_ => name)
   }
 
   def lookupUnqualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
@@ -87,12 +97,7 @@ object SymbolTable {
       throw CompileError.reservedWordError(raw)
     }
 
-    val nameParts = lookupRawName(table, state, raw)
-    if (nameParts.isEmpty) {
-      throw CompileError.undefinedError(raw)
-    } else {
-      nameParts
-    }
+    lookupRawName(table, state, raw)
   }
 
   def lookupType(table: SymbolTable, state: State, name: Name): Type = name match {
@@ -109,12 +114,10 @@ object SymbolTable {
       Some(LocalName(raw))
     } else {
       // first we look in the current module
-      val name = table.trees.get(state.currentTree).flatMap(maybeTree =>
-          ModuleTree.findModule(maybeTree, state.currentPaths)).
-        flatMap(maybeMod => maybeMod.vars.get(raw))
+      val name = state.currentModule.vars.get(raw)
 
       if (name.nonEmpty) {
-        Some(ModuleName(state.currentTree, state.currentPaths, name.get.name))
+        Some(Name.ModuleName.nest(state.currentModule.name, raw))
       } else {
         lookupGlobalName(table, state, raw)
       }
@@ -122,11 +125,11 @@ object SymbolTable {
   }
 
   private def lookupGlobalName(table: SymbolTable, state: State, raw: String): Option[Name] = {
-    val coreTree = table.trees(Core.coreName)
-    val commonModule = ModuleTree.findModule(coreTree, Core.commonPath)
+    val flopTree = table.trees(Core.rootName)
+    val commonModule = ModuleTree.findModule(flopTree, Core.commonPath)
 
     commonModule.flatMap(maybeMod => maybeMod.vars.get(raw)).map(v =>
-      ModuleName(Core.coreName, Core.commonPath, v.name))
+      ModuleName(Core.rootName, Core.commonPath, v.name))
   }
 
   private def lookupModuleNameType(table: SymbolTable, name: ModuleName): Type = {
@@ -170,12 +173,12 @@ object SymbolTable {
   }
 
   private def lookupModuleVar(table: SymbolTable, name: ModuleName): Option[Var] = {
-    table.trees.get(name.tree).flatMap(tree => ModuleTree.findModule(tree, name.paths)).
-      flatMap(maybeModule => maybeModule.vars.get(name.name))
+    findModule(table, name.tree, name.paths).
+      flatMap(maybeMod => maybeMod.vars.get(name.name))
   }
 
   private def lookupModuleType(table: SymbolTable, name: ModuleName): Option[Type] = {
-    table.trees.get(name.tree).flatMap(tree => ModuleTree.findModule(tree, name.paths)).
+    findModule(table, name.tree, name.paths).
       flatMap(maybeMod => maybeMod.vars.get(name.name).map(_.node.eType))
   }
 
@@ -205,5 +208,13 @@ object SymbolTable {
     case "str" => Type.String
     case "sym" => Type.Symbol
     case t => throw CompileError.undefinedError(t)
+  }
+
+  def addModule(table: SymbolTable, module: Module): SymbolTable = {
+    val blankTree = ModuleTree.newRoot(module.name.tree)
+    val tree = table.trees.getOrElse(module.name.tree, blankTree)
+    val newTree = ModuleTree.addModule(tree, module)
+
+    table.copy(trees = table.trees + (newTree.name -> tree))
   }
 }

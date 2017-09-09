@@ -43,8 +43,9 @@ class ModuleSpec extends BaseAnalysisSpec {
         val name = Form.SymF("foo.bar.baz")
         val args = Form.ListF(List(Form.SymF("module"), name))
 
+        val actualName = Name.ModuleName("foo", List("bar"), "baz")
         Module.analyze(f.table, args) should equal(
-          FlopModule.initial("bar", "foo", List("baz")))
+          FlopModule.initial(actualName))
       }
     }
   }

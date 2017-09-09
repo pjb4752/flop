@@ -31,8 +31,10 @@ object Module {
       }
     }
 
-    val root :: name :: path = nameParts
-    FlopModule.initial(name, root, path)//, analyzedImports)
+    val root :: rest = nameParts
+    val name :: paths = rest.reverse
+    val moduleName = Name.ModuleName(root, paths, name)
+    FlopModule.initial(moduleName)//, analyzedImports)
   }
 
   private def defaultMessage(target: String): String = {
@@ -45,10 +47,10 @@ object Module {
         |  (module NAME [IMPORTS])
         |  where:
         |    NAME is a SYMBOL of the form:
-        |      path1.path2.pathn.name
+        |      root.path2.pathn.name
         |    IMPORTS is of the form:
-        |      (import path1.path2.pathn.name1
-        |              path3.path4.pathn.name2)""".stripMargin
+        |      (import root.path1.pathn.name1
+        |              root.path2.pathn.name2)""".stripMargin
 
     CompileError.syntaxError(specificMessage, genericMessage)
   }
@@ -70,7 +72,7 @@ object Module {
 
   private def isValidName(name: String): Boolean = {
     val nameParts = analyzeName(name)
-    nameParts.length >= 2 && !nameParts.exists(_.isEmpty)
+    nameParts.length >= 3 && !nameParts.exists(_.isEmpty)
   }
 
   private def analyzeName(name: String): List[String] = {

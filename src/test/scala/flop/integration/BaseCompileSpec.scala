@@ -13,7 +13,8 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
 
   def withFixture(test: OneArgTest) = {
     val root = "user"
-    val path = List[String]()
+    val path = List[String]("core")
+    val imports = Map[String, Name.ModuleName]()
     val traits = Map[String, Module.Trait]()
     val vars = Map[String, Module.Var](
       "testnum" -> Module.Var("testnum", Node.NumLit(6)),
@@ -27,20 +28,27 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
           )
         )
     )
-    val moduleName = "testm"
-    val testModule = Module(moduleName, root, path, traits, vars)
-    val moduleTree = ModuleTree(root, Map(moduleName -> testModule))
+    val moduleName = Name.ModuleName(root, path, "testm")
+    val testModule = Module(moduleName, imports, traits, vars)
+    val moduleTree = ModuleTree(root,
+      Map(
+        "core" -> SubTree(
+          "core",
+          Map(moduleName.name -> testModule)
+        )
+      )
+    )
     val symbolTable = SymbolTable.withRoot(moduleTree.name)
 
-    val compileFn = compile(symbolTable) _
+    val compileFn = compile(symbolTable, testModule) _
     val fixture = FixtureParam(compileFn)
 
     withFixture(test.toNoArgTest(fixture))
   }
 
-  private def compile(table: SymbolTable)(source: String): String = {
+  private def compile(table: SymbolTable, module: Module)(source: String): String = {
     val forms = Reading.read(source)
-    val ast = Analysis.analyze(table, forms)
+    val (_, ast) = Analysis.analyze(table, module, forms)
 
     Backend.emit(ast)
   }
