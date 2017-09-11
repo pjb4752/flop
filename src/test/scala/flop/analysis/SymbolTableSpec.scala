@@ -155,20 +155,137 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
 
     describe("looking up vars") {
       describe("the var exists") {
-        it("should return the var") {
-
+        it("should return the var") { f =>
+          SymbolTable.lookupVar(
+            f.table, Name.ModuleName("root", List("core", "testm"), "testnum")
+          ) should equal(
+            Some(ModuleTree.Module.Var("testnum", Node.NumLit(6.0f)))
+          )
         }
       }
 
       describe("the var does not exist") {
-        it("should return None") {
-
+        it("should return None") { f =>
+          SymbolTable.lookupVar(
+            f.table, Name.ModuleName("flop", List("core", "common"), "thingy")
+          ) should equal(None)
         }
       }
 
       describe("the name is a valid var name") {
-        it("should throw a compile error") {
+        it("should throw a compile error") { f =>
+          an [CompileError] should be thrownBy(
+            SymbolTable.lookupVar(f.table, Name.LocalName("thingy"))
+          )
+        }
+      }
+    }
 
+    describe("looking up types") {
+      describe("the name is a literal name") {
+        describe("the name exists") {
+          it("should return the type") { f =>
+            SymbolTable.lookupType(
+              f.table, f.state, Name.LiteralName("true")
+            ) should equal(Node.TrueLit.eType)
+          }
+        }
+
+        describe("the name does not exist") {
+          it("should throw a compile error") { f =>
+            an [CompileError] should be thrownBy(
+              SymbolTable.lookupType(
+                f.table, f.state, Name.LiteralName("howdy"))
+            )
+          }
+        }
+      }
+
+      describe("the name is a local name") {
+        describe("the type exists") {
+          it("should return the type") { f =>
+            val newState = f.state.copy(
+              localScopes = List(Map("+" -> Type.Number)))
+
+            SymbolTable.lookupType(
+              f.table, newState, Name.LocalName("+")
+            ) should equal(Type.Number)
+          }
+        }
+
+        describe("the name does not exist") {
+          it("should throw a compile error") { f =>
+            an [CompileError] should be thrownBy(
+              SymbolTable.lookupType(
+                f.table, f.state, Name.LocalName("howdy"))
+            )
+          }
+        }
+      }
+
+      describe("the name is a module name") {
+        describe("the type exists") {
+          it("should return the type") { f =>
+            val path = List("core", "testm")
+
+            SymbolTable.lookupType(
+              f.table, f.state, Name.ModuleName("root", path, "testnum")
+            ) should equal(Type.Number)
+          }
+        }
+
+        describe("the name does not exist") {
+          it("should throw a compile error") { f =>
+            val path = List("core", "testm")
+
+            an [CompileError] should be thrownBy(
+              SymbolTable.lookupType(
+                f.table, f.state, Name.ModuleName("root", path, "howdy"))
+            )
+          }
+        }
+      }
+    }
+
+    describe("adding a module") {
+      describe("the tree does not exist") {
+        it("should add the module") { f =>
+          val newName = Name.ModuleName("foo", List("bar"), "baz")
+          val newModule = ModuleTree.Module.initial(newName)
+          val newTree = ModuleTree(
+            "foo",
+            Map(
+              "bar" -> ModuleTree.SubTree(
+                "bar",
+                Map("baz" -> newModule)
+              )
+            )
+          )
+
+          SymbolTable.addModule(f.table, newModule) should equal(
+            f.table.copy(trees = f.table.trees + ("foo" -> newTree)))
+        }
+      }
+
+      describe("the tree exists") {
+        it("should add the module") { f =>
+          val newName = Name.ModuleName("root", List("core"), "foo")
+          val newModule = ModuleTree.Module.initial(newName)
+          val newTree = ModuleTree(
+            "root",
+            Map(
+              "core" -> ModuleTree.SubTree(
+                "core",
+                Map(
+                  "testm" -> f.state.currentModule,
+                  "foo" -> newModule
+                )
+              ),
+            )
+          )
+
+          SymbolTable.addModule(f.table, newModule) should equal(
+            f.table.copy(trees = f.table.trees + ("root" -> newTree)))
         }
       }
     }

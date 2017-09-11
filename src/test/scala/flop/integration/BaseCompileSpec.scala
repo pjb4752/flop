@@ -39,8 +39,10 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
       )
     )
     val symbolTable = SymbolTable.withRoot(moduleTree.name)
+    val finalTable = symbolTable.copy(
+      trees = symbolTable.trees + (root -> moduleTree))
 
-    val compileFn = compile(symbolTable, testModule) _
+    val compileFn = compile(finalTable, testModule) _
     val fixture = FixtureParam(compileFn)
 
     withFixture(test.toNoArgTest(fixture))

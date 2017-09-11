@@ -100,10 +100,11 @@ object SymbolTable {
     lookupRawName(table, state, raw)
   }
 
+  // TODO this should return None?
   def lookupType(table: SymbolTable, state: State, name: Name): Type = name match {
-    case m: ModuleName => lookupModuleNameType(table, m)
     case l: LiteralName => lookupLiteralType(table, l)
     case l: LocalName => lookupLocalType(state, l)
+    case m: ModuleName => lookupModuleNameType(table, m)
     case _ => throw CompileError.undefinedError(name.name)
   }
 
@@ -215,6 +216,6 @@ object SymbolTable {
     val tree = table.trees.getOrElse(module.name.tree, blankTree)
     val newTree = ModuleTree.addModule(tree, module)
 
-    table.copy(trees = table.trees + (newTree.name -> tree))
+    table.copy(trees = table.trees + (newTree.name -> newTree))
   }
 }

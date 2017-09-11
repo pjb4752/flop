@@ -59,7 +59,7 @@ object Core {
    */
   val eqName = Name.ModuleName(rootName, commonPath, "=")
   val eqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val eqVar = ModuleTree.Module.Var(eqName.name, Node.LuaIFn(eqType, "="))
+  val eqVar = ModuleTree.Module.Var(eqName.name, Node.LuaIFn(eqType, "=="))
 
   val neqName = Name.ModuleName(rootName, commonPath, "<>")
   val neqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
