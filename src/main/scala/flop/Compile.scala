@@ -40,8 +40,10 @@ object Compile {
 
     // first we compile dependencies
     val tableWithDeps = compileAll(table, paths.toList)
+    // then we add the module to the table
+    val modTable = SymbolTable.addModule(tableWithDeps, module)
     // then we compile the module in question
-    val (finalTable, ast) = Analysis.analyze(tableWithDeps, module, forms.tail)
+    val (finalTable, ast) = Analysis.analyze(modTable, module, forms.tail)
     println(Backend.emit(ast))
 
     finalTable

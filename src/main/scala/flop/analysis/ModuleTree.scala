@@ -113,4 +113,47 @@ case object ModuleTree {
 
     tree.copy(children = tree.children + (newSubTree.name -> newSubTree))
   }
+
+  def updateModule(tree: ModuleTree, module: Module): ModuleTree = {
+    assert(module.name.paths.nonEmpty)
+
+    def update(node: MNode, paths: List[String], module: Module): SubTree = {
+      node match {
+        case m: Module => {
+          val message = s"Module path is invalid: ${paths}"
+          throw CompileError.moduleError(message)
+        }
+        case t: SubTree => {
+          if (paths.isEmpty) {
+            if (t.children.contains(module.name.name)) {
+              t.copy(children = t.children + (module.name.name -> module))
+            } else {
+              val message = s"Module ${module.name} is not defined"
+              throw CompileError.moduleError(message)
+            }
+          } else {
+            if (t.children.contains(paths.head)) {
+              val nextNode = t.children(paths.head)
+              update(nextNode, paths.tail, module)
+            } else {
+              val message = s"Module ${module.name} is not defined"
+              throw CompileError.moduleError(message)
+            }
+          }
+        }
+      }
+    }
+
+    val paths = module.name.paths
+    val subTree = tree.children.get(paths.head)
+
+    if (subTree.nonEmpty) {
+      val newSubTree = update(subTree.get, paths.tail, module)
+      tree.copy(children = tree.children + (newSubTree.name -> newSubTree))
+    } else {
+      val message = s"ModuleTree is invalid: ${paths.head}"
+      throw CompileError.moduleError(message)
+    }
+  }
+
 }

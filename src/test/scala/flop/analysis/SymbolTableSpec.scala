@@ -8,7 +8,11 @@ import flop.stdlib.Core
 
 class SymbolTableSpec extends fixture.FunSpec with Matchers {
 
-  case class FixtureParam(table: SymbolTable, state: State)
+  case class FixtureParam(
+    table: SymbolTable,
+    state: State,
+    testModule: ModuleTree.Module
+  )
 
   def defaultAnalyzeFn(table: SymbolTable, state: State)(form: Form): Node =
     Node.TrueLit
@@ -33,8 +37,8 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
       )
     )
     val finalTable = table.copy(trees = table.trees + (root -> moduleTree))
-    val state = State(defaultAnalyzeFn, true, testModule)
-    val fixture = FixtureParam(finalTable, state)
+    val state = State(defaultAnalyzeFn, true, moduleName)
+    val fixture = FixtureParam(finalTable, state, testModule)
 
     withFixture(test.toNoArgTest(fixture))
   }
@@ -277,7 +281,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
               "core" -> ModuleTree.SubTree(
                 "core",
                 Map(
-                  "testm" -> f.state.currentModule,
+                  "testm" -> f.testModule,
                   "foo" -> newModule
                 )
               ),

@@ -14,12 +14,25 @@ object Analysis {
 
   def analyze(table: SymbolTable, module: ModuleTree.Module,
       forms: List[Form]): (SymbolTable, List[Node]) = {
+    val state = State(tryAnalyze, true, module.name)
 
-    val state = State(tryAnalyze, true, module)
-    // modify SymbolTable here by adding Vars and Traits
-    val ast = forms.map(tryAnalyze(table, state))
+    val initial = (table, List[Node]())
+    val (finalTable, ast) = forms.foldLeft(initial)({ case ((tbl, ast), form) => {
+        val newNode = tryAnalyze(tbl, state)(form)
+        val newTable = newNode match {
+          case Node.DefN(n, e, t) => {
+            val vName = n.name.asInstanceOf[Name.ModuleName]
+            val varName = Name.ModuleName.nest(module.name, vName.name)
+            SymbolTable.addVar(tbl, varName, e)
+          }
+          case _ => tbl
+        }
 
-    (table, ast)
+        (newTable, newNode :: ast)
+      }
+    })
+
+    (finalTable, ast.reverse)
   }
 
   private def tryAnalyze(table: SymbolTable, state: State)(form: Form): Node = form match {

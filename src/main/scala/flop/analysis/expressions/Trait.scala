@@ -30,7 +30,7 @@ object Trait {
       //if (state.currentModule.traits.contains(symbolText)) {
         //throw CompileError(s"trait ${symbolText} already defined in this module")
       //}
-      val name = Name.ModuleName.nest(state.currentModule.name, symbolText)
+      val name = Name.ModuleName.nest(state.currentModule, symbolText)
       val symbol = Node.SymLit(name, Type.Trait)
       val fnDefs = analyzeFnDefs(table, state, symbol, args(1))
 
@@ -91,7 +91,7 @@ object Trait {
 
     val types = rawFnDef.map(t => SymbolTable.analyzeTypeForm(table, t))
     val fnType = Type.TraitFn(types.tail, types.head)
-    val name = Name.ModuleName.nest(state.currentModule.name, rawName)
+    val name = Name.ModuleName.nest(state.currentModule, rawName)
     val fnName = Node.SymLit(name, fnType)
 
     (fnName, Node.FnDef(traitName, fnName, fnType))

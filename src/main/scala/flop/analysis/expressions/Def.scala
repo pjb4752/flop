@@ -36,7 +36,7 @@ object Def {
         throw CompileError.reservedWordError(symbolText)
       }
 
-      val name = Name.ModuleName.nest(state.currentModule.name, symbolText)
+      val name = Name.ModuleName.nest(state.currentModule, symbolText)
       val symbol = Node.SymLit(name, expr.eType)
 
       Node.DefN(symbol, expr, expr.eType)

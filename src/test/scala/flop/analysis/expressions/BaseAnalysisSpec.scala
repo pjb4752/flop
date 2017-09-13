@@ -41,7 +41,7 @@ class BaseAnalysisSpec extends fixture.FunSpec with Matchers {
       )
     )
     val symbolTable = SymbolTable.withRoot(moduleTree.name)
-    val state = State(defaultAnalyzeFn, true, testModule)
+    val state = State(defaultAnalyzeFn, true, moduleName)
 
     val fixture = FixtureParam(symbolTable, state)
 

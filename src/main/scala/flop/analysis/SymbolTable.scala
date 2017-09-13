@@ -115,10 +115,13 @@ object SymbolTable {
       Some(LocalName(raw))
     } else {
       // first we look in the current module
-      val name = state.currentModule.vars.get(raw)
+      val Name.ModuleName(tree, paths, n) = state.currentModule
+      // TODO we know that current module exists
+      val currentModule = findModule(table, tree, paths :+ n).get
+      val name = currentModule.vars.get(raw)
 
       if (name.nonEmpty) {
-        Some(Name.ModuleName.nest(state.currentModule.name, raw))
+        Some(Name.ModuleName.nest(state.currentModule, raw))
       } else {
         lookupGlobalName(table, state, raw)
       }
@@ -217,5 +220,30 @@ object SymbolTable {
     val newTree = ModuleTree.addModule(tree, module)
 
     table.copy(trees = table.trees + (newTree.name -> newTree))
+  }
+
+  def updateModule(table: SymbolTable, module: Module): SymbolTable = {
+    val tree = table.trees.get(module.name.tree)
+
+    if (tree.nonEmpty) {
+      val newTree = ModuleTree.updateModule(tree.get, module)
+      table.copy(trees = table.trees + (newTree.name -> newTree))
+    } else {
+      val message = s"Module path is invalid: ${module.name}"
+      throw CompileError.moduleError(message)
+    }
+  }
+
+  def addVar(table: SymbolTable, name: Name.ModuleName, expr: Node): SymbolTable = {
+    val module = findModule(table, name.tree, name.paths)
+
+    if (module.nonEmpty) {
+      val newModule = Module.addVar(module.get, Var(name.name, expr))
+      updateModule(table, newModule)
+    } else {
+      val pathString = name.paths.mkString("/")
+      val message = s"Module ${pathString} in tree ${name.tree} is not valid"
+      throw CompileError.moduleError(message)
+    }
   }
 }
