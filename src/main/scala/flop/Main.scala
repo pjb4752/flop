@@ -6,7 +6,11 @@ object Main {
     if (args.isEmpty) {
       println("Nothing to compile!")
     } else {
-      Compile.compileAll(args.toList)
+      try {
+        Compile.compileAll(args.toList)
+      } catch {
+        case e: Throwable => println(e)
+      }
     }
   }
 }

@@ -33,19 +33,25 @@ object Compile {
 
   def compileModule(table: SymbolTable, forms: List[Form]): SymbolTable = {
     val module = Analysis.analyzeModuleDef(table, forms.head)
-    val toLoad = module.imports.filter({ case (_, Name.ModuleName(t, p, n)) =>
-      SymbolTable.isLoaded(table, t, p :+ n)
-    })
-    val paths = toLoad.map(i => ModuleIO.pathFromName(i._2))
+    val Name.ModuleName(tree, paths, name) = module.name
 
-    // first we compile dependencies
-    val tableWithDeps = compileAll(table, paths.toList)
-    // then we add the module to the table
-    val modTable = SymbolTable.addModule(tableWithDeps, module)
-    // then we compile the module in question
-    val (finalTable, ast) = Analysis.analyze(modTable, module, forms.tail)
-    println(Backend.emit(ast))
+    if (SymbolTable.isLoaded(table, tree, paths :+ name)) {
+      table
+    } else {
+      val toLoad = module.imports.filter({ case (_, Name.ModuleName(t, p, n)) =>
+        !SymbolTable.isLoaded(table, t, p :+ n)
+      })
+      val paths = toLoad.map(i => ModuleIO.pathFromName(i._2))
 
-    finalTable
+      // first we compile dependencies
+      val tableWithDeps = compileAll(table, paths.toList)
+      // then we add the module to the table
+      val modTable = SymbolTable.addModule(tableWithDeps, module)
+      // then we compile the module in question
+      val (finalTable, ast) = Analysis.analyze(modTable, module, forms.tail)
+      println(Backend.emit(ast))
+
+      finalTable
+    }
   }
 }

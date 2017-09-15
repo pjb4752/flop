@@ -18,5 +18,12 @@ object Name {
     def nest(modName: ModuleName, value: String): ModuleName = {
       modName.copy(paths = modName.paths :+ modName.name, name = value)
     }
+
+    def fromList(list: List[String]): ModuleName = {
+      assert(list.length >= 3)
+
+      val name :: paths = list.tail.reverse
+      ModuleName(list.head, paths, name)
+    }
   }
 }

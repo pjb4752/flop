@@ -22,8 +22,8 @@ object Module {
     }
 
     val analyzedImports = imports match {
-      case Form.SymF(v) :: tail if v == "import" => analyzeImports(tail).toMap
-      case Nil => Map[String, String]()
+      case Form.SymF(v) :: tail if v == "import" => analyzeImports(tail)
+      case Nil => Map[String, Name.ModuleName]()
       case _ => {
         val message = s"""Expected module import statements
                          |  got: ${imports}""".stripMargin
@@ -34,7 +34,7 @@ object Module {
     val root :: rest = nameParts
     val name :: paths = rest.reverse
     val moduleName = Name.ModuleName(root, paths, name)
-    FlopModule.initial(moduleName)//, analyzedImports)
+    FlopModule.initial(moduleName).copy(imports = analyzedImports)
   }
 
   private def defaultMessage(target: String): String = {
@@ -79,7 +79,7 @@ object Module {
     name.split('.').toList
   }
 
-  private def analyzeImports(forms: List[Form]): List[(String, String)] = {
+  private def analyzeImports(forms: List[Form]): Map[String, Name.ModuleName] = {
     forms.map(f => f match {
       case Form.SymF(v) => analyzeImport(v)
       case _ => {
@@ -87,18 +87,19 @@ object Module {
           "a valid module path, got ${forms}"
         throw syntaxError(message)
       }
-    })
+    }).toMap
   }
 
-  private def analyzeImport(module: String): (String, String) = {
-    val moduleParts = module.split('.')
+  private def analyzeImport(module: String): (String, Name.ModuleName) = {
+    val moduleParts = module.split('.').toList
 
-    if (moduleParts.length < 2) {
+    if (moduleParts.length < 3) {
       val message = s"Expected import statement to contain " +
         " a fully qualified module path, got ${module}"
       throw syntaxError(message)
     }
 
-    (moduleParts.last, module)
+    val moduleName = Name.ModuleName.fromList(moduleParts)
+    (moduleName.name, moduleName)
   }
 }
