@@ -54,7 +54,7 @@ object Repl {
         println(nodes)
       }
 
-      val source = Backend.emit(nodes)
+      val source = Backend.emit(nodes).mkString("\n")
       if (debug) {
         println("--- lua source ---")
         println(source)

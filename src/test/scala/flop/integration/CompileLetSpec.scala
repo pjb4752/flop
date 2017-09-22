@@ -109,10 +109,10 @@ class CompileLetSpec extends BaseCompileSpec {
           """local var_1
             |do
             |local var_2
-            |if (testnum1 > testnum2) then
-            |var_2 = testnum1
+            |if (core_testm.testnum1 > core_testm.testnum2) then
+            |var_2 = core_testm.testnum1
             |else
-            |var_2 = testnum2
+            |var_2 = core_testm.testnum2
             |end
             |local x = var_2
             |local m = 5.0

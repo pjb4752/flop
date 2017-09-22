@@ -21,7 +21,7 @@ class CompileLiteralSpec extends BaseCompileSpec {
 
     describe("when the literal is a symbol") {
       it("should produce the correct lua") { f =>
-        f.compileFn("testnum") should equal("testnum")
+        f.compileFn("testnum") should equal("core_testm.testnum")
       }
 
       describe("when the symbol is a builtin var") {

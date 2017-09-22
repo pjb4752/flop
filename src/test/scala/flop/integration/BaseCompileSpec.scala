@@ -52,6 +52,6 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
     val forms = Reading.read(source)
     val (_, ast) = Analysis.analyze(table, module, forms)
 
-    Backend.emit(ast)
+    Backend.emit(ast).mkString("\n")
   }
 }

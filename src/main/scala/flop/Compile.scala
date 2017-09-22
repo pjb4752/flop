@@ -3,6 +3,8 @@ package flop
 import java.nio.file.{Path, Paths, Files}
 import java.util.stream.Collectors
 
+import scala.collection.JavaConverters._
+
 import flop.analysis._
 import flop.backend._
 import flop.io.ModuleIO
@@ -49,9 +51,24 @@ object Compile {
       val modTable = SymbolTable.addModule(tableWithDeps, module)
       // then we compile the module in question
       val (finalTable, ast) = Analysis.analyze(modTable, module, forms.tail)
-      println(Backend.emit(ast))
+      val mPaths = module.name.paths :+ module.name.name
+      val finalModule = SymbolTable.findModule(
+          finalTable, module.name.tree, mPaths).get
+
+      emitSource(finalModule, ast)
 
       finalTable
     }
+  }
+
+  def emitSource(module: ModuleTree.Module, ast: List[Node]): Unit = {
+    val source = Backend.emit(ast)
+    val dirPath = ModuleIO.outputDirPath(module.name)
+    Files.createDirectories(dirPath)
+
+    val outputPath = ModuleIO.outputPath(module.name)
+    val emittedSource = Backend.emitModule(module, ast)
+
+    Files.write(outputPath, emittedSource.asJava)
   }
 }

@@ -43,12 +43,19 @@ object SymbolTable {
   def isValidPath(tree: ModuleTree, paths: List[String]): Boolean =
     ModuleTree.isValidPath(tree, paths)
 
+
   def findModule(table: SymbolTable, tree: String, paths: List[String]): Option[Module] = {
     table.trees.get(tree).flatMap(t => ModuleTree.findModule(t, paths))
   }
 
   def isLoaded(table: SymbolTable, tree: String, paths: List[String]): Boolean = {
     findModule(table, tree, paths).nonEmpty
+  }
+
+  def getCurrentModule(table: SymbolTable, name: Name.ModuleName): Module = {
+      val Name.ModuleName(tree, paths, n) = name
+      // current module should always exist
+      findModule(table, tree, paths :+ n).get
   }
 
   def lookupName(table: SymbolTable, state: State, raw: String): Option[Name] = {
@@ -87,9 +94,22 @@ object SymbolTable {
       throw CompileError.moduleError(message)
     }
 
-    // first we look in the current module
-    val name = ModuleName(nameParts.head, paths, nameParts.last)
-    lookupVar(table, name).map(_ => name)
+    // check if the path referenced is imported
+    val mBase :: mPaths = nameParts.tail.reverse.tail
+    val mName = ModuleName(nameParts.head, mPaths, mBase)
+    val currentModule = getCurrentModule(table, state.currentModule)
+    val varName = ModuleName(nameParts.head, paths, nameParts.last)
+
+    val isStdlibModule = mName == Core.commonModule.name
+    val isModuleImported = currentModule.imports.values.toList.contains(mName)
+
+    if (!isStdlibModule && !isModuleImported) {
+      val message = s"Var ${varName} is not imported in ${currentModule.name}"
+      throw CompileError.moduleError(message)
+    }
+
+    // TODO this is wonky
+    lookupVar(table, varName).map(_ => varName)
   }
 
   def lookupUnqualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
@@ -114,10 +134,7 @@ object SymbolTable {
     if (localBinding.nonEmpty) {
       Some(LocalName(raw))
     } else {
-      // first we look in the current module
-      val Name.ModuleName(tree, paths, n) = state.currentModule
-      // TODO we know that current module exists
-      val currentModule = findModule(table, tree, paths :+ n).get
+      val currentModule = getCurrentModule(table, state.currentModule)
       val name = currentModule.vars.get(raw)
 
       if (name.nonEmpty) {

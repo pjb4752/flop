@@ -1,18 +1,41 @@
 package flop.backend
 
-import flop.analysis.{Name, Node}
+import flop.analysis.{ModuleTree, Name, Node}
 
 object Backend {
 
-  def emit(nodes: List[Node], state: State = State(0, 0, 0)): String =
-    nodes.map(tryEmit(state)).mkString("\n")
+  def emitModule(module: ModuleTree.Module, nodes: List[Node]): List[String] = {
+    val requireLines = emitRequires(module)
+    val sourceLines = emit(nodes)
+    val returnLines = emitReturn(module)
+
+    requireLines ++ sourceLines ++ returnLines
+  }
+
+  def emit(nodes: List[Node], state: State = State(0, 0, 0)): List[String] =
+    nodes.map(tryEmit(state))
+
+  private def emitRequires(module: ModuleTree.Module): List[String] = {
+    module.imports.map({ case (abbr, full) =>
+      val fullModulePath = full.paths :+ full.name
+      val requireName = localModuleName(full.paths :+ full.name)
+      val requirePath = fullModulePath.mkString(".")
+
+      s"local ${requireName} = require('${requirePath}')"
+    }).toList
+  }
+
+  private def emitReturn(module: ModuleTree.Module): List[String] = {
+    val names = module.vars.keys.map(name => s"${name} = ${name},").toList
+    ("return {" :: names) :+ "}"
+  }
 
   private def tryEmit(state: State)(node: Node): String = node match {
     case Node.TrueLit => "true"
     case Node.FalseLit => "false"
     case Node.NumLit(v) => v.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
-    case Node.SymLit(n, _) => n.name
+    case Node.SymLit(n, _) => emitName(state, n)
     case Node.ListLit(v) => emitList(state, v)
     case Node.MapLit(m) => emitMap(state, m)
     case Node.DefN(n, v, _) => emitDef(state, n, v)
@@ -24,6 +47,11 @@ object Backend {
     case Node.TraitN(_, _) => ""
     case Node.TraitImpl(_, _, _) => ""
     case n => throw new Exception(s"emit ${n}???")
+  }
+
+  private def emitName(state: State, name: Name): String = name match {
+    case lName @ (_:Name.LiteralName | _:Name.LocalName) => lName.name
+    case Name.ModuleName(t, p, n) => s"${localModuleName(p)}.${n}"
   }
 
   // TODO handle complex expression in list members, like let form
@@ -87,7 +115,7 @@ object Backend {
   }
 
   private def emitFlopApply(state: State, name: Name, args: List[Node]): String = {
-    emitPrefixApply(state, name.name, args)
+    emitPrefixApply(state, emitName(state, name), args)
   }
 
   private def emitExpr(state: State, expr: Node): String = expr match {
@@ -126,7 +154,8 @@ object Backend {
       right: Node): String =
     s"(${tryEmit(state)(left)} ${name} ${tryEmit(state)(right)})"
 
-  private def emitPrefixApply(state: State, name: String,
-      args: List[Node]): String =
+  private def emitPrefixApply(state: State, name: String, args: List[Node]): String =
     args.map(tryEmit(state)).mkString(name + "(", ", ", ")")
+
+  private def localModuleName(parts: List[String]): String = parts.mkString("_")
 }
