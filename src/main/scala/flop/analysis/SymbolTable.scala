@@ -10,6 +10,20 @@ case class SymbolTable(trees: Map[String, ModuleTree])
 
 object SymbolTable {
 
+  val specialForms = List("def", "fn", "if", "let")
+
+  val literals = Map(
+    "true" -> Node.TrueLit,
+    "false" -> Node.FalseLit
+  )
+
+  def withStdLib() = {
+    val coreLib = Core.library
+    val initialMap = Map(coreLib.name -> coreLib)
+
+    SymbolTable(initialMap)
+  }
+
   def withRoot(rootName: String) = {
     val moduleTree = ModuleTree.newRoot(rootName)
     val initialMap = Map(rootName -> moduleTree)
@@ -19,18 +33,7 @@ object SymbolTable {
     SymbolTable(withStdLib)
   }
 
-  /*
-   * For right now these are special 'syntax' recognized by the compiler,
-   * that don't follow standard rules of application
-   */
-  val specialForms = List("def", "fn", "if", "let")
-
   def isSpecialForm(s: String) = specialForms.contains(s)
-
-  val literals = Map(
-    "true" -> Node.TrueLit,
-    "false" -> Node.FalseLit
-  )
 
   def isLiteral(s: String) = literals.contains(s)
 
@@ -43,20 +46,38 @@ object SymbolTable {
   def isValidPath(tree: ModuleTree, paths: List[String]): Boolean =
     ModuleTree.isValidPath(tree, paths)
 
-
   def findModule(table: SymbolTable, tree: String, paths: List[String]): Option[Module] = {
     table.trees.get(tree).flatMap(t => ModuleTree.findModule(t, paths))
   }
 
-  def isLoaded(table: SymbolTable, tree: String, paths: List[String]): Boolean = {
-    findModule(table, tree, paths).nonEmpty
+  def getModule(table: SymbolTable, moduleName: Name.ModuleName): Module = {
+      val Name.ModuleName(tree, paths, name) = moduleName
+      // current module should always exist
+      findModule(table, tree, paths :+ name).get
   }
 
-  def getCurrentModule(table: SymbolTable, name: Name.ModuleName): Module = {
-      val Name.ModuleName(tree, paths, n) = name
-      // current module should always exist
-      findModule(table, tree, paths :+ n).get
+  def addModule(table: SymbolTable, module: Module): SymbolTable = {
+    val blankTree = ModuleTree.newRoot(module.name.tree)
+    val tree = table.trees.getOrElse(module.name.tree, blankTree)
+    val newTree = ModuleTree.addModule(tree, module)
+
+    table.copy(trees = table.trees + (newTree.name -> newTree))
   }
+
+  def updateModule(table: SymbolTable, module: Module): SymbolTable = {
+    val tree = table.trees.get(module.name.tree)
+
+    if (tree.nonEmpty) {
+      val newTree = ModuleTree.updateModule(tree.get, module)
+      table.copy(trees = table.trees + (newTree.name -> newTree))
+    } else {
+      val message = s"Module path is invalid: ${module.name}"
+      throw CompileError.moduleError(message)
+    }
+  }
+
+  def isLoaded(table: SymbolTable, tree: String, paths: List[String]): Boolean =
+    findModule(table, tree, paths).nonEmpty
 
   def lookupName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     if (isLiteral(raw)) {
@@ -68,6 +89,23 @@ object SymbolTable {
     }
   }
 
+  // TODO this should return None?
+  def lookupType(table: SymbolTable, state: State, name: Name): Type = name match {
+    case l: LiteralName => lookupLiteralType(table, l)
+    case l: LocalName => lookupLocalType(state, l)
+    case m: ModuleName => lookupModuleNameType(table, m)
+    case _ => throw CompileError.undefinedError(name.name)
+  }
+
+  def lookupTypeLiteral(table: SymbolTable, lit: String): Type = lit match {
+    case "unit" => Type.Unit
+    case "bool" => Type.Boolean
+    case "num" => Type.Number
+    case "str" => Type.String
+    case "sym" => Type.Symbol
+    case t => throw CompileError.undefinedError(t)
+  }
+
   def lookupVar(table: SymbolTable, name: Name): Option[Var] = name match {
     case m: ModuleName => lookupModuleVar(table, m)
     case _ => {
@@ -76,7 +114,20 @@ object SymbolTable {
     }
   }
 
-  def lookupQualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
+  def addVar(table: SymbolTable, name: Name.ModuleName, expr: Node): SymbolTable = {
+    val module = findModule(table, name.tree, name.paths)
+
+    if (module.nonEmpty) {
+      val newModule = Module.addVar(module.get, Var(name.name, expr))
+      updateModule(table, newModule)
+    } else {
+      val pathString = name.paths.mkString("/")
+      val message = s"Module ${pathString} in tree ${name.tree} is not valid"
+      throw CompileError.moduleError(message)
+    }
+  }
+
+  private def lookupQualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     val nameParts = raw.split("\\.").toList
 
     if (SymbolTable.isReservedName(nameParts.last)) {
@@ -97,7 +148,7 @@ object SymbolTable {
     // check if the path referenced is imported
     val mBase :: mPaths = nameParts.tail.reverse.tail
     val mName = ModuleName(nameParts.head, mPaths, mBase)
-    val currentModule = getCurrentModule(table, state.currentModule)
+    val currentModule = getModule(table, state.currentModule)
     val varName = ModuleName(nameParts.head, paths, nameParts.last)
 
     val isStdlibModule = mName == Core.commonModule.name
@@ -112,29 +163,17 @@ object SymbolTable {
     lookupVar(table, varName).map(_ => varName)
   }
 
-  def lookupUnqualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
+  private def lookupUnqualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     if (SymbolTable.isReservedName(raw)) {
       throw CompileError.reservedWordError(raw)
     }
 
-    lookupRawName(table, state, raw)
-  }
-
-  // TODO this should return None?
-  def lookupType(table: SymbolTable, state: State, name: Name): Type = name match {
-    case l: LiteralName => lookupLiteralType(table, l)
-    case l: LocalName => lookupLocalType(state, l)
-    case m: ModuleName => lookupModuleNameType(table, m)
-    case _ => throw CompileError.undefinedError(name.name)
-  }
-
-  private def lookupRawName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     val localBinding = state.localScopes.find(_.contains(raw))
 
     if (localBinding.nonEmpty) {
       Some(LocalName(raw))
     } else {
-      val currentModule = getCurrentModule(table, state.currentModule)
+      val currentModule = getModule(table, state.currentModule)
       val name = currentModule.vars.get(raw)
 
       if (name.nonEmpty) {
@@ -215,52 +254,4 @@ object SymbolTable {
     //ModuleTree.findModule(tree, name.paths).flatMap(maybeModule =>
       //maybeModule.traits.get(name.name).
   //}
-
-  // TODO put this elsewhere
-  def analyzeTypeForm(table: SymbolTable, form: Form): Type = form match {
-    case Form.SymF(s) => analyzeTypeLiteral(table, s)
-    case t => throw CompileError.undefinedError(t.toString)
-  }
-
-  def analyzeTypeLiteral(table: SymbolTable, lit: String): Type = lit match {
-    case "unit" => Type.Unit
-    case "bool" => Type.Boolean
-    case "num" => Type.Number
-    case "str" => Type.String
-    case "sym" => Type.Symbol
-    case t => throw CompileError.undefinedError(t)
-  }
-
-  def addModule(table: SymbolTable, module: Module): SymbolTable = {
-    val blankTree = ModuleTree.newRoot(module.name.tree)
-    val tree = table.trees.getOrElse(module.name.tree, blankTree)
-    val newTree = ModuleTree.addModule(tree, module)
-
-    table.copy(trees = table.trees + (newTree.name -> newTree))
-  }
-
-  def updateModule(table: SymbolTable, module: Module): SymbolTable = {
-    val tree = table.trees.get(module.name.tree)
-
-    if (tree.nonEmpty) {
-      val newTree = ModuleTree.updateModule(tree.get, module)
-      table.copy(trees = table.trees + (newTree.name -> newTree))
-    } else {
-      val message = s"Module path is invalid: ${module.name}"
-      throw CompileError.moduleError(message)
-    }
-  }
-
-  def addVar(table: SymbolTable, name: Name.ModuleName, expr: Node): SymbolTable = {
-    val module = findModule(table, name.tree, name.paths)
-
-    if (module.nonEmpty) {
-      val newModule = Module.addVar(module.get, Var(name.name, expr))
-      updateModule(table, newModule)
-    } else {
-      val pathString = name.paths.mkString("/")
-      val message = s"Module ${pathString} in tree ${name.tree} is not valid"
-      throw CompileError.moduleError(message)
-    }
-  }
 }

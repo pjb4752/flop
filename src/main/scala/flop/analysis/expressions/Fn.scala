@@ -16,7 +16,7 @@ object Fn {
       throw syntaxError(message)
     }
 
-    val rType = SymbolTable.analyzeTypeForm(table, args(0))
+    val rType = TypeExpr.analyze(table, args(0))
     val params = analyzeParams(table, args(1))
     val symbols = params.map({ case (s, t) => (s.name.name -> t) }).toMap
     val newState = state.copy(localScopes = symbols :: state.localScopes)
@@ -71,7 +71,7 @@ object Fn {
     if (SymbolTable.isReservedName(rawName)) {
       CompileError.reservedWordError(rawName)
     }
-    val symType = SymbolTable.analyzeTypeForm(table, pType)
+    val symType = TypeExpr.analyze(table, pType)
     val localName = LocalName(rawName)
 
     (Node.SymLit(localName, symType), symType)

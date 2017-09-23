@@ -8,9 +8,8 @@ import flop.reading.Form._
 
 object TypeExpr {
 
-  // TODO put this elsewhere
-  def analyzeTypeForm(table: SymbolTable, form: Form): Type = form match {
-    case Form.SymF(s) => SymbolTable.analyzeTypeLiteral(table, s)
+  def analyze(table: SymbolTable, form: Form): Type = form match {
+    case Form.SymF(s) => SymbolTable.lookupTypeLiteral(table, s)
     case t => throw CompileError.undefinedError(t.toString)
   }
 }

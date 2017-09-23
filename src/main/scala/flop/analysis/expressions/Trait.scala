@@ -89,7 +89,7 @@ object Trait {
       throw syntaxError(message)
     }
 
-    val types = rawFnDef.map(t => SymbolTable.analyzeTypeForm(table, t))
+    val types = rawFnDef.map(t => TypeExpr.analyze(table, t))
     val fnType = Type.TraitFn(types.tail, types.head)
     val name = Name.ModuleName.nest(state.currentModule, rawName)
     val fnName = Node.SymLit(name, fnType)
