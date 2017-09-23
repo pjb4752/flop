@@ -5,14 +5,16 @@ import flop.analysis.{ModuleTree, Name, Node}
 object Backend {
 
   def emitModule(module: ModuleTree.Module, nodes: List[Node]): List[String] = {
+    val state = State(module, 0, 0, 0)
+
     val requireLines = emitRequires(module)
-    val sourceLines = emit(nodes)
+    val sourceLines = emit(state, nodes)
     val returnLines = emitReturn(module)
 
     requireLines ++ sourceLines ++ returnLines
   }
 
-  def emit(nodes: List[Node], state: State = State(0, 0, 0)): List[String] =
+  def emit(state: State, nodes: List[Node]): List[String] =
     nodes.map(tryEmit(state))
 
   private def emitRequires(module: ModuleTree.Module): List[String] = {
@@ -51,7 +53,16 @@ object Backend {
 
   private def emitName(state: State, name: Name): String = name match {
     case lName @ (_:Name.LiteralName | _:Name.LocalName) => lName.name
-    case Name.ModuleName(t, p, n) => s"${localModuleName(p)}.${n}"
+    case Name.ModuleName(t, p, n) => {
+      val currentName = state.module.name
+      val currentPaths = currentName.paths :+ currentName.name
+
+      if (currentName.tree == t && currentPaths == p) {
+        s"${n}"
+      } else {
+        s"${localModuleName(p)}.${n}"
+      }
+    }
   }
 
   // TODO handle complex expression in list members, like let form

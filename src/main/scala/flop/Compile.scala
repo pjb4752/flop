@@ -62,7 +62,6 @@ object Compile {
   }
 
   def emitSource(module: ModuleTree.Module, ast: List[Node]): Unit = {
-    val source = Backend.emit(ast)
     val dirPath = ModuleIO.outputDirPath(module.name)
     Files.createDirectories(dirPath)
 

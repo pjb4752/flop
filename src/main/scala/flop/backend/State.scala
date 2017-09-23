@@ -1,6 +1,8 @@
 package flop.backend
 
-case class State(varNum: Int, fnNum: Int, currentIndent: Int) {
+import flop.analysis.ModuleTree
+
+case class State(module: ModuleTree.Module, varNum: Int, fnNum: Int, currentIndent: Int) {
   val varPrefix = "var"
   val fnPrefix = "fn"
   val tabSize = 2
@@ -19,13 +21,6 @@ case class State(varNum: Int, fnNum: Int, currentIndent: Int) {
 
   def unindent(): State = {
     if (currentIndent < 1) this
-    else State(varNum, fnNum, currentIndent - 1)
-  }
-}
-
-object State {
-
-  def initial: State = {
-    State(0, 0, 0)
+    else State(module, varNum, fnNum, currentIndent - 1)
   }
 }

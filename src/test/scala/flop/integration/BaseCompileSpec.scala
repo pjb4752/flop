@@ -13,8 +13,43 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
 
   def withFixture(test: OneArgTest) = {
     val root = "user"
+    val importedModule = makeImportedModule(root)
+    val currentModule = makeCurrentModule(root, importedModule)
+    val moduleTree = ModuleTree(root,
+      Map(
+        "core" -> SubTree(
+          "core",
+          Map(
+            importedModule.name.name -> importedModule,
+            currentModule.name.name -> currentModule
+          )
+        )
+      )
+    )
+    val symbolTable = SymbolTable.withRoot(moduleTree.name)
+    val finalTable = symbolTable.copy(
+      trees = symbolTable.trees + (root -> moduleTree))
+
+    val compileFn = compile(finalTable, currentModule) _
+    val fixture = FixtureParam(compileFn)
+
+    withFixture(test.toNoArgTest(fixture))
+  }
+
+  private def makeImportedModule(root: String): Module = {
     val path = List[String]("core")
     val imports = Map[String, Name.ModuleName]()
+    val traits = Map[String, Module.Trait]()
+    val vars = Map[String, Module.Var](
+      "six" -> Module.Var("six", Node.NumLit(6)),
+    )
+    val moduleName = Name.ModuleName(root, path, "foomod")
+    Module(moduleName, imports, traits, vars)
+  }
+
+  private def makeCurrentModule(root: String, imported: Module): Module = {
+    val path = List[String]("core")
+    val imports = Map(imported.name.name -> imported.name)
     val traits = Map[String, Module.Trait]()
     val vars = Map[String, Module.Var](
       "testnum" -> Module.Var("testnum", Node.NumLit(6)),
@@ -29,29 +64,14 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
         )
     )
     val moduleName = Name.ModuleName(root, path, "testm")
-    val testModule = Module(moduleName, imports, traits, vars)
-    val moduleTree = ModuleTree(root,
-      Map(
-        "core" -> SubTree(
-          "core",
-          Map(moduleName.name -> testModule)
-        )
-      )
-    )
-    val symbolTable = SymbolTable.withRoot(moduleTree.name)
-    val finalTable = symbolTable.copy(
-      trees = symbolTable.trees + (root -> moduleTree))
-
-    val compileFn = compile(finalTable, testModule) _
-    val fixture = FixtureParam(compileFn)
-
-    withFixture(test.toNoArgTest(fixture))
+    Module(moduleName, imports, traits, vars)
   }
 
   private def compile(table: SymbolTable, module: Module)(source: String): String = {
     val forms = Reading.read(source)
     val (_, ast) = Analysis.analyze(table, module, forms)
 
-    Backend.emit(ast).mkString("\n")
+    val state = EState(module, 0, 0, 0)
+    Backend.emit(state, ast).mkString("\n")
   }
 }
