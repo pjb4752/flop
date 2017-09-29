@@ -11,6 +11,7 @@ object CompileError {
   case class ReservedWordError(message: String) extends CompileError(message)
   case class TypeError(message: String) extends CompileError(message)
   case class UndefinedError(message: String) extends CompileError(message)
+  case class UnimplementedError(message: String) extends CompileError(message)
   case class ModuleError(message: String) extends CompileError(message)
   case class NameError(message: String) extends CompileError(message)
 
@@ -46,6 +47,13 @@ object CompileError {
 
   def undefinedError(name: String) = {
     UndefinedError(s"Undefined value: ${name}")
+  }
+
+  def unimplementedError(name: String, selfType: Type) = {
+    val message = s"""Unimplemented trait function
+                     |  ${name} has no definition for type ${selfType}""".stripMargin
+
+    UnimplementedError(message)
   }
 
   def moduleError(message: String) = {

@@ -26,10 +26,11 @@ object Trait {
       // TODO check if symbol contains('.')
       val symbolText = args.head.asInstanceOf[Form.SymF].value
 
-      // TODO check for trait definition
-      //if (state.currentModule.traits.contains(symbolText)) {
-        //throw CompileError(s"trait ${symbolText} already defined in this module")
-      //}
+      val traitName = Name.ModuleName.nest(state.currentModule, symbolText)
+      if (SymbolTable.lookupTrait(table, traitName).nonEmpty) {
+        val message = s"trait ${symbolText} already defined in this module"
+        throw CompileError.moduleError(message)
+      }
       val name = Name.ModuleName.nest(state.currentModule, symbolText)
       val symbol = Node.SymLit(name, Type.Trait)
       val fnDefs = analyzeFnDefs(table, state, symbol, args(1))

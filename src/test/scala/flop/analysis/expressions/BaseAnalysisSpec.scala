@@ -27,11 +27,12 @@ class BaseAnalysisSpec extends fixture.FunSpec with Matchers {
     val path = List[String]("core")
     val imports = Map[String, Name.ModuleName]()
     val traits = Map[String, ModuleTree.Module.Trait]()
+    val traitImpls = Map[ModuleTree.Module.TraitFn, Node.FnN]()
     val vars = Map[String, ModuleTree.Module.Var](
       "testnum" -> ModuleTree.Module.Var("testnum", Node.NumLit(6)),
     )
     val moduleName = Name.ModuleName(root, path, "testm")
-    val testModule = ModuleTree.Module(moduleName, imports, traits, vars)
+    val testModule = ModuleTree.Module(moduleName, imports, traits, traitImpls, vars)
     val moduleTree = ModuleTree(root,
       Map(
         "core" -> ModuleTree.SubTree(

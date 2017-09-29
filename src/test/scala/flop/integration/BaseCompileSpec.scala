@@ -40,17 +40,19 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
     val path = List[String]("core")
     val imports = Map[String, Name.ModuleName]()
     val traits = Map[String, Module.Trait]()
+    val traitImpls = Map[ModuleTree.Module.TraitFn, Node.FnN]()
     val vars = Map[String, Module.Var](
       "six" -> Module.Var("six", Node.NumLit(6)),
     )
     val moduleName = Name.ModuleName(root, path, "foomod")
-    Module(moduleName, imports, traits, vars)
+    Module(moduleName, imports, traits, traitImpls, vars)
   }
 
   private def makeCurrentModule(root: String, imported: Module): Module = {
     val path = List[String]("core")
     val imports = Map(imported.name.name -> imported.name)
     val traits = Map[String, Module.Trait]()
+    val traitImpls = Map[ModuleTree.Module.TraitFn, Node.FnN]()
     val vars = Map[String, Module.Var](
       "testnum" -> Module.Var("testnum", Node.NumLit(6)),
       "testnum1" -> Module.Var("testnum1", Node.NumLit(7)),
@@ -64,7 +66,7 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
         )
     )
     val moduleName = Name.ModuleName(root, path, "testm")
-    Module(moduleName, imports, traits, vars)
+    Module(moduleName, imports, traits, traitImpls, vars)
   }
 
   private def compile(table: SymbolTable, module: Module)(source: String): String = {

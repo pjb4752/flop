@@ -20,8 +20,7 @@ object Apply {
     SymbolTable.lookupType(table, state, name) match {
       case ff: Type.FreeFn => analyzeApplyFreeFn(table, state, name, ff, args)
       case lf: Type.LuaFn => analyzeApplyLuaFn(table, state, name, lf, args)
-      // TODO put this back
-      //case tf: Type.TraitFn => analyzeApplyTraitFn(table, state, name, tf, args)
+      case tf: Type.TraitFn => analyzeApplyTraitFn(table, state, name, tf, args)
       case t => throw CompileError.typeError(op, "Function", t)
     }
   }
@@ -43,29 +42,28 @@ object Apply {
     Node.LuaApply(luaFn, arguments, fnType.rType)
   }
 
-  //private def analyzeApplyTraitFn(table: SymbolTable, state: State, op: Name,
-      //fnType: Type.TraitFn, args: List[Form]): Node = {
+  private def analyzeApplyTraitFn(table: SymbolTable, state: State, op: Name,
+      fnType: Type.TraitFn, args: List[Form]): Node = {
 
-    //// TODO For now we assume that any trait takes "self" as first param
-    //// but in the future we'll need to type annotate somehow for traitFns
-    //// that might not take a self parameter, or come up with another solution
-    //val arguments = analyzeArguments(table, state, op, fnType, args, Some(0))
-    //val selfType = arguments.head
-    //val traitImpl = SymbolTable.findTraitImpl(table, state, op, selfType.eType)
+    // TODO For now we assume that any trait takes "self" as first param
+    // but in the future we'll need to type annotate somehow for traitFns
+    // that might not take a self parameter, or come up with another solution
+    val arguments = analyzeArguments(table, state, op, fnType, args, Some(0))
+    val selfType = arguments.head
+    val traitFnImpl = SymbolTable.lookupTraitFnImpl(table, state, op, selfType.eType)
 
-    //if (traitImpl.isEmpty) {
-      //throw CompileError(UnimplementedError(op.toString, selfType.eType))
-    //}
+    if (traitFnImpl.isEmpty) {
+      throw CompileError.unimplementedError(op.name, selfType.eType)
+    }
 
-    //// at this point none of this should blow up
-    //val fnImpl = traitImpl.get.fnImpls.find(_._1.value == op).get._2
-    //val rType = fnImpl.rType
+    // at this point none of this should blow up
+    val rType = traitFnImpl.get.rType
 
-    //fnImpl match {
-      //case lf: Node.LuaFn => Node.LuaApply(lf, arguments, rType)
-      //case ff: Node.FlopFn => Node.FlopApply(op, arguments, rType)
-    //}
-  //}
+    traitFnImpl.get match {
+      case lf: Node.LuaFn => Node.LuaApply(lf, arguments, rType)
+      case ff: Node.FlopFn => Node.FlopApply(op, arguments, rType)
+    }
+  }
 
   private def analyzeArguments(table: SymbolTable, state: State, op: Name, fnType: Type.Fn,
       args: List[Form], selfPos: Option[Int] = None): List[Node] = {

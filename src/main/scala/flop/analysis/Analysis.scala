@@ -25,6 +25,16 @@ object Analysis {
             val varName = Name.ModuleName.nest(module.name, vName.name)
             SymbolTable.addVar(tbl, varName, e)
           }
+          case Node.TraitN(n, fns) => {
+            val tName = n.name.asInstanceOf[Name.ModuleName]
+            val traitName = Name.ModuleName.nest(module.name, tName.name)
+            val fnDefs = fns.map({ case (s, fn) =>
+              val fName = s.name.name
+              (fName, ModuleTree.Module.FnDef(fName, fn))
+            })
+
+            SymbolTable.addTrait(tbl, traitName, fnDefs)
+          }
           case _ => tbl
         }
 

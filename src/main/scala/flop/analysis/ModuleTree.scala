@@ -15,6 +15,7 @@ case object ModuleTree {
     name: Name.ModuleName,
     imports: Map[String, Name.ModuleName],
     traits: Module.Traits = Map[String, Module.Trait](),
+    traitImpls: Module.TraitImpls = Map[Module.TraitFn, Node.FnN](),
     vars: Module.Vars = Map[String, Module.Var]()
   ) extends MNode
 
@@ -28,19 +29,35 @@ case object ModuleTree {
     case class Trait(name: String, fnDefs: FnDefs)
     type Traits = Map[String, Trait]
 
+    case class TraitFn(traitName: String, fnName: String, selfType: Type)
+    type TraitImpls = Map[TraitFn, Node.FnN]
+
     def initial(name: Name.ModuleName): Module = {
       val initialImports = Map[String, Name.ModuleName]()
       val initialTraits = Map[String, Trait]()
+      val initialTraitImpls = Map[TraitFn, Node.FnN]()
       val initialVars = Map[String, Var]()
 
-      Module(name, initialImports, initialTraits, initialVars)
+      Module(name, initialImports, initialTraits, initialTraitImpls, initialVars)
     }
 
-    def addVar(module: Module, newVar: Var) = {
+    def lookupVar(module: Module, varName: String): Option[Var] = {
+      module.vars.get(varName)
+    }
+
+    def addVar(module: Module, newVar: Var): Module = {
       module.copy(vars = module.vars + (newVar.name -> newVar))
     }
 
-    def addTrait(module: Module, newTrait: Trait) = {
+    def lookupTrait(module: Module, traitName: String): Option[Trait] = {
+      module.traits.get(traitName)
+    }
+
+    def lookupTraitImpl(module: Module, traitFn: TraitFn): Option[Node.FnN] = {
+      module.traitImpls.get(traitFn)
+    }
+
+    def addTrait(module: Module, newTrait: Trait): Module = {
       module.copy(traits = module.traits + (newTrait.name -> newTrait))
     }
   }

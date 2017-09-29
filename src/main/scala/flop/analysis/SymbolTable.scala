@@ -93,7 +93,8 @@ object SymbolTable {
   def lookupType(table: SymbolTable, state: State, name: Name): Type = name match {
     case l: LiteralName => lookupLiteralType(table, l)
     case l: LocalName => lookupLocalType(state, l)
-    case m: ModuleName => lookupModuleNameType(table, m)
+    case m: ModuleName => lookupModuleType(table, m)
+    case f: TraitFnName => lookupTraitFnType(table, f)
     case _ => throw CompileError.undefinedError(name.name)
   }
 
@@ -127,8 +128,40 @@ object SymbolTable {
     }
   }
 
+  // TODO share Trait code with addVar
+  // TODO test trait functionality
+  def lookupTrait(table: SymbolTable, name: Name): Option[Trait] = name match {
+    case m: ModuleName => lookupModuleTrait(table, m)
+    case _ => {
+      val message = s"${name} is invalid trait name"
+      throw CompileError.nameError(message)
+    }
+  }
+
+  def lookupTraitFnImpl(table: SymbolTable, state: State, name: Name, selfType: Type) = name match {
+    case n: TraitFnName => lookupModuleTraitFnImpl(table, n, selfType)
+    case _ => {
+      val message = s"${name} is invalid trait fn name"
+      throw CompileError.nameError(message)
+    }
+  }
+
+  def addTrait(table: SymbolTable, name: Name.ModuleName, fnDefs: Map[String, FnDef]): SymbolTable = {
+    val module = findModule(table, name.tree, name.paths)
+
+    if (module.nonEmpty) {
+      val newTrait = Trait(name.name, fnDefs)
+      val newModule = Module.addTrait(module.get, newTrait)
+      updateModule(table, newModule)
+    } else {
+      val pathString = name.paths.mkString("/")
+      val message = s"Module ${pathString} in tree ${name.tree} is not valid"
+      throw CompileError.moduleError(message)
+    }
+  }
+
   private def lookupQualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
-    val nameParts = raw.split("\\.").toList
+    val nameParts = raw.split('.').toList
 
     if (SymbolTable.isReservedName(nameParts.last)) {
       throw CompileError.reservedWordError(nameParts.last)
@@ -136,31 +169,48 @@ object SymbolTable {
 
     val treeName = nameParts.head
     val paths = nameParts.slice(1, nameParts.length - 1)
+    val maybeTree = table.trees.get(treeName)
 
-    val validPath = table.trees.get(treeName).map(tree =>
+    val validModulePath = maybeTree.map(tree =>
       SymbolTable.isValidPath(tree, paths)).getOrElse(false)
 
-    if (!validPath) {
+    if (validModulePath) {
+      // check if the path referenced is imported
+      val mBase :: mPaths = nameParts.tail.reverse.tail
+      val mName = ModuleName(treeName, mPaths, mBase)
+      val varName = ModuleName(treeName, paths, nameParts.last)
+      val currentModule = getModule(table, state.currentModule)
+
+      val isStdlibModule = mName == Core.commonModule.name
+      val isModuleImported = currentModule.imports.values.toList.contains(mName)
+
+      if (!isStdlibModule && !isModuleImported) {
+        val message = s"Var ${varName} is not imported in ${currentModule.name}"
+        throw CompileError.moduleError(message)
+      }
+
+      // TODO this is wonky
+      val moduleVar = lookupVar(table, varName).map(_ => varName)
+
+      if (moduleVar.nonEmpty) {
+        moduleVar
+      } else {
+        val traitTuple = findModule(table, treeName, paths).flatMap(maybeMod =>
+          maybeMod.traits.find({ case (_, Trait(_, fndefs)) =>
+            fndefs.mapValues(_.fnDef.fnName).contains(nameParts.last)
+          }))
+
+        traitTuple.map(maybeTrait => {
+          val traitName = maybeTrait._1
+          val moduleName = ModuleName(treeName, paths, traitName)
+
+          TraitFnName(moduleName, nameParts.last)
+        })
+      }
+    } else {
       val message = s"Module name ${nameParts} is not valid"
       throw CompileError.moduleError(message)
     }
-
-    // check if the path referenced is imported
-    val mBase :: mPaths = nameParts.tail.reverse.tail
-    val mName = ModuleName(nameParts.head, mPaths, mBase)
-    val currentModule = getModule(table, state.currentModule)
-    val varName = ModuleName(nameParts.head, paths, nameParts.last)
-
-    val isStdlibModule = mName == Core.commonModule.name
-    val isModuleImported = currentModule.imports.values.toList.contains(mName)
-
-    if (!isStdlibModule && !isModuleImported) {
-      val message = s"Var ${varName} is not imported in ${currentModule.name}"
-      throw CompileError.moduleError(message)
-    }
-
-    // TODO this is wonky
-    lookupVar(table, varName).map(_ => varName)
   }
 
   private def lookupUnqualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
@@ -192,24 +242,29 @@ object SymbolTable {
       ModuleName(Core.rootName, Core.commonPath, v.name))
   }
 
-  private def lookupModuleNameType(table: SymbolTable, name: ModuleName): Type = {
-    val moduleType = lookupModuleType(table, name)
+  private def lookupModuleType(table: SymbolTable, name: ModuleName): Type = {
+    val moduleType = lookupModuleVar(table, name).map(_.node.eType)
 
     if (moduleType.nonEmpty) {
       moduleType.get
     } else {
       throw CompileError.undefinedError(name.toString)
     }
-    // TODO put this back when trait lookup is handled
-    //} else {
-      //val fnType = lookupTraitFnType(tree, name)
+  }
 
-      //if (fnType.nonEmpty) {
-        //fnType.get
-      //} else {
-        //throw CompileError(UndefinedError(name.toString))
-      //}
-    //}
+  private def lookupTraitFnType(table: SymbolTable, name: TraitFnName): Type = {
+    val ModuleName(tree, paths, base) = name.moduleName
+
+    val fnType = findModule(table, tree, paths).flatMap(maybeMod =>
+      maybeMod.traits.get(base).flatMap(maybeTrait =>
+        maybeTrait.fnDefs.get(name.name).map(maybeFnDef =>
+          maybeFnDef.fnDef.eType)))
+
+    if (fnType.nonEmpty) {
+      fnType.get
+    } else {
+      throw CompileError.undefinedError(name.toString)
+    }
   }
 
   private def lookupLiteralType(table: SymbolTable, name: LiteralName): Type = {
@@ -234,24 +289,19 @@ object SymbolTable {
 
   private def lookupModuleVar(table: SymbolTable, name: ModuleName): Option[Var] = {
     findModule(table, name.tree, name.paths).
-      flatMap(maybeMod => maybeMod.vars.get(name.name))
+      flatMap(maybeMod => Module.lookupVar(maybeMod, name.name))
   }
 
-  private def lookupModuleType(table: SymbolTable, name: ModuleName): Option[Type] = {
+  private def lookupModuleTrait(table: SymbolTable, name: ModuleName): Option[Trait] = {
     findModule(table, name.tree, name.paths).
-      flatMap(maybeMod => maybeMod.vars.get(name.name).map(_.node.eType))
+      flatMap(maybeMod => Module.lookupTrait(maybeMod, name.name))
   }
 
-  // TODO figure out how to handle this, should traits have unique function names
-  // per module or should trait 'namespace' the function names?
-  //private def lookupTraitFnType(tree: ModuleTree, name: ModuleName): Option[Type] = {
-    //ModuleTree.findModule(tree, name.paths).flatMap(maybeModule =>
-      //maybeModule.traits.get(name.name))
-  //}
+  private def lookupModuleTraitFnImpl(table: SymbolTable, name: TraitFnName, selfType: Type): Option[Node.FnN] = {
+    val TraitFnName(moduleName, fnName) = name
+    val traitImplName = TraitFn(moduleName.name, fnName, selfType)
 
-  // TODO handle trait implementation lookup
-  //def findTraitImpl(tree: ModuleTree, state: State, name: ModuleName, selfType: Type): Option[Node.TraitImpl] = {
-    //ModuleTree.findModule(tree, name.paths).flatMap(maybeModule =>
-      //maybeModule.traits.get(name.name).
-  //}
+    findModule(table, moduleName.tree, moduleName.paths).
+      flatMap(maybeMod => Module.lookupTraitImpl(maybeMod, traitImplName))
+  }
 }
