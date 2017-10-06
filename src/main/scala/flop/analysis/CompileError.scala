@@ -45,6 +45,13 @@ object CompileError {
     typeError(target, e.toString, a)
   }
 
+  def selfTypeError(target: String, e: List[Type]): TypeError = {
+    val message = s"""Self-type mismatch in ${target}
+                   |  found varying types of ${e.mkString(", ")}""".stripMargin
+
+    TypeError(message)
+  }
+
   def undefinedError(name: String) = {
     UndefinedError(s"Undefined value: ${name}")
   }

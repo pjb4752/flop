@@ -17,15 +17,41 @@ object Core {
    */
   val showName = Name.ModuleName(rootName, commonPath, "Show")
   val strName = Name.ModuleName(rootName, commonPath, "str")
-  val showStrType = Type.TraitFn(List(Type.Self), Type.String)
+  val strType = Type.TraitFn(List(Type.Self), Type.String)
   val showTrait = ModuleTree.Module.Trait(showName.name,
-    Map(strName.name ->
-      ModuleTree.Module.FnDef(
+    Map(
+      strName.name -> ModuleTree.Module.FnDef(
         strName.name,
         Node.FnDef(
           Node.SymLit(showName, Type.Trait),
-          Node.SymLit(strName, showStrType),
-          showStrType
+          Node.SymLit(strName, strType),
+          strType
+        )
+      )
+    )
+  )
+
+  val equalityName = Name.ModuleName(rootName, commonPath, "Equality")
+  val eqName = Name.ModuleName(rootName, commonPath, "=")
+  val neqName = Name.ModuleName(rootName, commonPath, "<>")
+  val eqType = Type.TraitFn(List(Type.Self, Type.Self), Type.Boolean)
+  val neqType = Type.TraitFn(List(Type.Self, Type.Self), Type.Boolean)
+  val equalityTrait = ModuleTree.Module.Trait(equalityName.name,
+    Map(
+      eqName.name -> ModuleTree.Module.FnDef(
+        eqName.name,
+        Node.FnDef(
+          Node.SymLit(equalityName, Type.Trait),
+          Node.SymLit(eqName, eqType),
+          eqType
+        )
+      ),
+      neqName.name -> ModuleTree.Module.FnDef(
+        neqName.name,
+        Node.FnDef(
+          Node.SymLit(equalityName, Type.Trait),
+          Node.SymLit(neqName, neqType),
+          neqType
         )
       )
     )
@@ -36,12 +62,21 @@ object Core {
    */
   val showTraitImpl = Map(
     ModuleTree.Module.TraitFn(showName.name, strName.name, Type.Number) ->
-      Node.LuaPFn(showStrType, "num_to_str"),
+      Node.LuaPFn(strType, "num_to_str"),
     ModuleTree.Module.TraitFn(showName.name, strName.name, Type.Boolean) ->
-      Node.LuaPFn(showStrType, "bool_to_str")
+      Node.LuaPFn(strType, "bool_to_str")
     )
 
-  val traitImpls = showTraitImpl
+  val equalityTraitImpl = Map(
+    ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Number) ->
+      Node.LuaIFn(eqType, "=="),
+    ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Boolean) ->
+      Node.LuaIFn(eqType, "==")
+    )
+
+  val traitImpls =
+    showTraitImpl ++
+    equalityTraitImpl
 
   /*
    * Math functions
@@ -61,17 +96,6 @@ object Core {
   val divName = Name.ModuleName(rootName, commonPath, "/")
   val divType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
   val divVar = ModuleTree.Module.Var(divName.name, Node.LuaIFn(divType, "/"))
-
-  /*
-   * Equality functions TODO make this a trait
-   */
-  val eqName = Name.ModuleName(rootName, commonPath, "=")
-  val eqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val eqVar = ModuleTree.Module.Var(eqName.name, Node.LuaIFn(eqType, "=="))
-
-  val neqName = Name.ModuleName(rootName, commonPath, "<>")
-  val neqType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val neqVar = ModuleTree.Module.Var(neqName.name, Node.LuaIFn(neqType, "~="))
 
   /*
    * Comparison functions TODO make this a trait
@@ -106,7 +130,8 @@ object Core {
     Name.ModuleName(rootName, List[String](coreName), commonName),
     Map[String, Name.ModuleName](),
     Map(
-      showName.name -> showTrait
+      showName.name -> showTrait,
+      equalityName.name -> equalityTrait
     ),
     traitImpls,
     Map(
@@ -114,8 +139,6 @@ object Core {
       minusName.name -> minusVar,
       multName.name -> multVar,
       divName.name -> divVar,
-      eqName.name -> eqVar,
-      neqName.name -> neqVar,
       gtName.name -> gtVar,
       gteName.name -> gteVar,
       ltName.name -> ltVar,
