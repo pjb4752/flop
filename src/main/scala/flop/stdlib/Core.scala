@@ -70,8 +70,16 @@ object Core {
   val equalityTraitImpl = Map(
     ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Number) ->
       Node.LuaIFn(eqType, "=="),
+    ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.Number) ->
+      Node.LuaIFn(neqType, "~="),
     ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Boolean) ->
-      Node.LuaIFn(eqType, "==")
+      Node.LuaIFn(eqType, "=="),
+    ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.Boolean) ->
+      Node.LuaIFn(neqType, "~="),
+    ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.String) ->
+      Node.LuaIFn(eqType, "=="),
+    ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.String) ->
+      Node.LuaIFn(neqType, "~=")
     )
 
   val traitImpls =
