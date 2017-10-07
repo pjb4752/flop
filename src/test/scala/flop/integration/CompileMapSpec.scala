@@ -20,7 +20,7 @@ class CompileMapSpec extends BaseCompileSpec {
 
     describe("creating a map from expressions") {
       it("should produce the correct lua") { f =>
-        f.compileFn("{(+ 1 2) (+ 3 4)}") should equal(
+        f.compileFn("{(flop.core.common.+ 1 2) (flop.core.common.+ 3 4)}") should equal(
             "Map.new((1.0 + 2.0), (3.0 + 4.0))")
       }
     }

@@ -76,7 +76,12 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
             SymbolTable.lookupName(
               f.table, f.state, "flop.core.common.+",
             ) should equal(
-              Some(Name.ModuleName("flop", List("core", "common"), "+"))
+              Some(
+                Name.TraitFnName(
+                  Name.ModuleName("flop", List("core", "common"), "Numeric"),
+                  "+"
+                )
+              )
             )
           }
         }
@@ -131,6 +136,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
             }
           }
 
+          // TODO fix this
           describe("the name is global") {
             it("should return the name") { f =>
               SymbolTable.lookupName(

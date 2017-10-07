@@ -18,7 +18,7 @@ class CompileLetSpec extends BaseCompileSpec {
 
     describe("when the value is a function") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(let (x (fn num {a num b num} (+ a b))) x)") should equal(
+        f.compileFn("(let (x (fn num {a num b num} (flop.core.common.+ a b))) x)") should equal(
           """local var_1
             |do
             |local x = function(a, b)
@@ -33,7 +33,7 @@ class CompileLetSpec extends BaseCompileSpec {
 
     describe("when the value is the result of a function") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(let (x (+ 1 2)) (+ 1 x))") should equal(
+        f.compileFn("(let (x (flop.core.common.+ 1 2)) (flop.core.common.+ 1 x))") should equal(
           """local var_1
             |do
             |local x = (1.0 + 2.0)
@@ -46,7 +46,7 @@ class CompileLetSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn(
           """(let (x 5)
-            |  (let (y (+ x 5)) y))""".stripMargin) should equal(
+            |  (let (y (flop.core.common.+ x 5)) y))""".stripMargin) should equal(
           """local var_1
             |do
             |local x = 5.0
@@ -64,8 +64,8 @@ class CompileLetSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn(
           """(let (x 5)
-            |  (let (y (+ x 5))
-            |    (let (z (+ y 3)) z)))""".stripMargin) should equal(
+            |  (let (y (flop.core.common.+ x 5))
+            |    (let (z (flop.core.common.+ y 3)) z)))""".stripMargin) should equal(
           """local var_1
             |do
             |local x = 5.0
@@ -86,7 +86,7 @@ class CompileLetSpec extends BaseCompileSpec {
 
     describe("nested binding forms") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(let (x (let (y 5) y)) (+ 1 x))") should equal(
+        f.compileFn("(let (x (let (y 5) y)) (flop.core.common.+ 1 x))") should equal(
           """local var_1
             |do
             |local var_2
@@ -105,7 +105,7 @@ class CompileLetSpec extends BaseCompileSpec {
         f.compileFn(
           """(let (x (if (> testnum1 testnum2) testnum1 testnum2)
             |      m 5)
-            |  (+ x m))""".stripMargin) should equal(
+            |  (flop.core.common.+ x m))""".stripMargin) should equal(
           """local var_1
             |do
             |local var_2

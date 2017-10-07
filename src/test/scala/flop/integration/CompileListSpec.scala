@@ -19,7 +19,7 @@ class CompileListSpec extends BaseCompileSpec {
 
     describe("creating a list from expressions") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(list (+ 1 2) (+ 3 4))") should equal(
+        f.compileFn("(list (flop.core.common.+ 1 2) (flop.core.common.+ 3 4))") should equal(
           "List.new((1.0 + 2.0), (3.0 + 4.0))")
       }
     }

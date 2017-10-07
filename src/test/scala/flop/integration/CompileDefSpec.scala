@@ -15,13 +15,13 @@ class CompileDefSpec extends BaseCompileSpec {
 
     describe("defining from simple operations") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x (+ 1 2))") should equal("local x = (1.0 + 2.0)")
+        f.compileFn("(def x (flop.core.common.+ 1 2))") should equal("local x = (1.0 + 2.0)")
       }
     }
 
     describe("defining a function") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x (fn num {a num b num} (+ a b)))") should equal(
+        f.compileFn("(def x (fn num {a num b num} (flop.core.common.+ a b)))") should equal(
           """local x = function(a, b)
             |local var_1
             |var_1 = (a + b)
