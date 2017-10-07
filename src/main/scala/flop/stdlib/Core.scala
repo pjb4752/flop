@@ -13,7 +13,7 @@ object Core {
   /*
    * Definition of 'common' trait Show which allows string conversions
    * Function Defs:
-   * str - takes 'self' and returns 'self' as string
+   * str - takes param of type Self and returns its string representation
    */
   val showName = Name.ModuleName(rootName, commonPath, "Show")
   val strName = Name.ModuleName(rootName, commonPath, "str")
@@ -31,9 +31,15 @@ object Core {
     )
   )
 
+  /*
+   * Definition of 'common' trait Equality which allows equality comparisons
+   * Function Defs:
+   * = - takes two params of Self type and tests them for equality
+   * <> - takes two params of Self type and tests them for inequality
+   */
   val equalityName = Name.ModuleName(rootName, commonPath, "Equality")
   val eqName = Name.ModuleName(rootName, commonPath, "=")
-  val neqName = Name.ModuleName(rootName, commonPath, "<>")
+  val neqName = Name.ModuleName(rootName, commonPath, "not=")
   val eqType = Type.TraitFn(List(Type.Self, Type.Self), Type.Boolean)
   val neqType = Type.TraitFn(List(Type.Self, Type.Self), Type.Boolean)
   val equalityTrait = ModuleTree.Module.Trait(equalityName.name,
@@ -52,6 +58,60 @@ object Core {
           Node.SymLit(equalityName, Type.Trait),
           Node.SymLit(neqName, neqType),
           neqType
+        )
+      )
+    )
+  )
+
+  /*
+   * Definition of 'common' trait Numeric which allows numerical comparisons
+   * Function Defs:
+   * + - takes two params of Self type and performs addition
+   * - - takes two params of Self type and performs subtraction
+   * * - takes two params of Self type and performs multiplication
+   * / - takes two params of Self type and performs division
+   */
+  val numericName = Name.ModuleName(rootName, commonPath, "Numeric")
+  val plusName = Name.ModuleName(rootName, commonPath, "+")
+  val minusName = Name.ModuleName(rootName, commonPath, "-")
+  val multName = Name.ModuleName(rootName, commonPath, "*")
+  val divName = Name.ModuleName(rootName, commonPath, "/")
+  val plusType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)
+  val minusType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)
+  val multType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)
+  val divType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)
+  val numericTrait = ModuleTree.Module.Trait(numericName.name,
+    Map(
+      plusName.name -> ModuleTree.Module.FnDef(
+        plusName.name,
+        Node.FnDef(
+          Node.SymLit(numericName, Type.Trait),
+          Node.SymLit(plusName, plusType),
+          plusType
+        )
+      ),
+      minusName.name -> ModuleTree.Module.FnDef(
+        minusName.name,
+        Node.FnDef(
+          Node.SymLit(numericName, Type.Trait),
+          Node.SymLit(minusName, minusType),
+          minusType
+        )
+      ),
+      multName.name -> ModuleTree.Module.FnDef(
+        multName.name,
+        Node.FnDef(
+          Node.SymLit(numericName, Type.Trait),
+          Node.SymLit(multName, multType),
+          multType
+        )
+      ),
+      divName.name -> ModuleTree.Module.FnDef(
+        divName.name,
+        Node.FnDef(
+          Node.SymLit(numericName, Type.Trait),
+          Node.SymLit(divName, divType),
+          divType
         )
       )
     )
@@ -82,28 +142,21 @@ object Core {
       Node.LuaIFn(neqType, "~=")
     )
 
+  val numericTraitImpl = Map(
+    ModuleTree.Module.TraitFn(numericName.name, plusName.name, Type.Number) ->
+      Node.LuaIFn(plusType, "+"),
+    ModuleTree.Module.TraitFn(numericName.name, minusName.name, Type.Number) ->
+      Node.LuaIFn(minusType, "-"),
+    ModuleTree.Module.TraitFn(numericName.name, multName.name, Type.Number) ->
+      Node.LuaIFn(multType, "*"),
+    ModuleTree.Module.TraitFn(numericName.name, divName.name, Type.Number) ->
+      Node.LuaIFn(divType, "/"),
+  )
+
   val traitImpls =
     showTraitImpl ++
-    equalityTraitImpl
-
-  /*
-   * Math functions
-   */
-  val plusName = Name.ModuleName(rootName, commonPath, "+")
-  val plusType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
-  val plusVar = ModuleTree.Module.Var(plusName.name, Node.LuaIFn(plusType, "+"))
-
-  val minusName = Name.ModuleName(rootName, commonPath, "-")
-  val minusType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
-  val minusVar = ModuleTree.Module.Var(minusName.name, Node.LuaIFn(minusType, "-"))
-
-  val multName = Name.ModuleName(rootName, commonPath, "*")
-  val multType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
-  val multVar = ModuleTree.Module.Var(multName.name, Node.LuaIFn(multType, "*"))
-
-  val divName = Name.ModuleName(rootName, commonPath, "/")
-  val divType = Type.LuaFn(List(Type.Number, Type.Number), Type.Number)
-  val divVar = ModuleTree.Module.Var(divName.name, Node.LuaIFn(divType, "/"))
+    equalityTraitImpl ++
+    numericTraitImpl
 
   /*
    * Comparison functions TODO make this a trait
@@ -139,14 +192,11 @@ object Core {
     Map[String, Name.ModuleName](),
     Map(
       showName.name -> showTrait,
-      equalityName.name -> equalityTrait
+      equalityName.name -> equalityTrait,
+      numericName.name -> numericTrait
     ),
     traitImpls,
     Map(
-      plusName.name -> plusVar,
-      minusName.name -> minusVar,
-      multName.name -> multVar,
-      divName.name -> divVar,
       gtName.name -> gtVar,
       gteName.name -> gteVar,
       ltName.name -> ltVar,

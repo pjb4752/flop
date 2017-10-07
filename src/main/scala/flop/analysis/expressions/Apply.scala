@@ -73,7 +73,11 @@ object Apply {
     typecheckTraitArgs(table, state, op, fnType, arguments, selfType)
 
     // at this point none of this should blow up
-    val rType = traitFnImpl.get.rType
+    val rType = if (traitFnImpl.get.rType == Type.Self) {
+      selfType
+    } else {
+      traitFnImpl.get.rType
+    }
 
     traitFnImpl.get match {
       case lf: Node.LuaFn => Node.LuaApply(lf, arguments, rType)
