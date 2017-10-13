@@ -16,7 +16,7 @@ object Core {
    * str - takes param of type Self and returns its string representation
    */
   val showName = Name.ModuleName(rootName, commonPath, "Show")
-  val strName = Name.ModuleName(rootName, commonPath, "str")
+  val strName = Name.TraitFnName(showName, "str")
   val strType = Type.TraitFn(List(Type.Self), Type.String)
   val showTrait = ModuleTree.Module.Trait(showName.name,
     Map(
@@ -38,8 +38,8 @@ object Core {
    * <> - takes two params of Self type and tests them for inequality
    */
   val equalityName = Name.ModuleName(rootName, commonPath, "Equality")
-  val eqName = Name.ModuleName(rootName, commonPath, "=")
-  val neqName = Name.ModuleName(rootName, commonPath, "not=")
+  val eqName = Name.TraitFnName(equalityName, "=")
+  val neqName = Name.TraitFnName(equalityName, "not=")
   val eqType = Type.TraitFn(List(Type.Self, Type.Self), Type.Boolean)
   val neqType = Type.TraitFn(List(Type.Self, Type.Self), Type.Boolean)
   val equalityTrait = ModuleTree.Module.Trait(equalityName.name,
@@ -72,10 +72,10 @@ object Core {
    * / - takes two params of Self type and performs division
    */
   val numericName = Name.ModuleName(rootName, commonPath, "Numeric")
-  val plusName = Name.ModuleName(rootName, commonPath, "+")
-  val minusName = Name.ModuleName(rootName, commonPath, "-")
-  val multName = Name.ModuleName(rootName, commonPath, "*")
-  val divName = Name.ModuleName(rootName, commonPath, "/")
+  val plusName = Name.TraitFnName(numericName, "+")
+  val minusName = Name.TraitFnName(numericName, "-")
+  val multName = Name.TraitFnName(numericName, "*")
+  val divName = Name.TraitFnName(numericName, "/")
   val plusType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)
   val minusType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)
   val multType = Type.TraitFn(List(Type.Self, Type.Self), Type.Self)

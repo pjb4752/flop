@@ -23,8 +23,14 @@ object Trait {
                        |  got: ${args.head}""".stripMargin
       throw syntaxError(message)
     } else {
-      // TODO check if symbol contains('.')
       val symbolText = args.head.asInstanceOf[Form.SymF].value
+      if (symbolText.contains(".")) {
+        val message = s"""trait form expects NAME to be unqualified, got:
+                         |  ${symbolText}""".stripMargin
+        throw syntaxError(message)
+      } else if (SymbolTable.isReservedName(symbolText)) {
+        throw CompileError.reservedWordError(symbolText)
+      }
 
       val traitName = Name.ModuleName.nest(state.currentModule, symbolText)
       if (SymbolTable.lookupTrait(table, traitName).nonEmpty) {
@@ -84,16 +90,29 @@ object Trait {
         throw syntaxError(message)
       }
     }
-    if (rawFnDef.length < 1) {
+    if (rawFnDef.length != 2) {
       val message = s"""Wrong number of terms in trait FN-DEF"
-                       |  expected (1..N), actual: ${rawFnDef.length}""".stripMargin
+                       |  expected: 2, actual: ${rawFnDef.length}""".stripMargin
       throw syntaxError(message)
     }
 
-    val types = rawFnDef.map(t => TypeExpr.analyze(table, t))
-    val fnType = Type.TraitFn(types.tail, types.head)
-    val name = Name.ModuleName.nest(state.currentModule, rawName)
-    val fnName = Node.SymLit(name, fnType)
+    val rLiteral :: rawParams :: Nil = rawFnDef;
+    val rType = TypeExpr.analyze(table, rLiteral, isFnDef = true)
+
+    val params = rawParams match {
+      case Form.ListF(p) => p
+      case _ => {
+        val message = s"""trait form expects FN-DEF PARAMS to be a list
+                         |  got: ${rawParams}""".stripMargin
+        throw syntaxError(message)
+      }
+    }
+
+    val pTypes = params.map(p => TypeExpr.analyze(table, p, isFnDef = true))
+    val fnType = Type.TraitFn(pTypes, rType)
+    val modName = traitName.name.asInstanceOf[Name.ModuleName]
+    val traitFnName = Name.TraitFnName(modName, rawName)
+    val fnName = Node.SymLit(traitFnName, fnType)
 
     (fnName, Node.FnDef(traitName, fnName, fnType))
   }

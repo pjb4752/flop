@@ -12,6 +12,9 @@ object SymbolTable {
 
   val specialForms = List("def", "fn", "if", "let")
 
+  val selfLiteral = "self"
+  val selfType = Type.Self
+
   val literals = Map(
     "true" -> Node.TrueLit,
     "false" -> Node.FalseLit
@@ -34,6 +37,8 @@ object SymbolTable {
   }
 
   def isSpecialForm(s: String) = specialForms.contains(s)
+
+  def isSelfLiteral(s: String) = s == selfLiteral
 
   def isLiteral(s: String) = literals.contains(s)
 
