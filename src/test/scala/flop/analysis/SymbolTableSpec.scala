@@ -74,11 +74,11 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the name exists") {
           it("should return the name") { f =>
             SymbolTable.lookupName(
-              f.table, f.state, "flop.core.common.+",
+              f.table, f.state, "flopcore.core.common.+",
             ) should equal(
               Some(
                 Name.TraitFnName(
-                  Name.ModuleName("flop", List("core", "common"), "Numeric"),
+                  Name.ModuleName("flopcore", List("core", "common"), "Numeric"),
                   "+"
                 )
               )
@@ -89,7 +89,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the name is a reserved word") {
           it("should throw a compile error") { f =>
             an [CompileError] should be thrownBy(
-              SymbolTable.lookupName(f.table, f.state, "flop.core.common.def")
+              SymbolTable.lookupName(f.table, f.state, "flopcore.core.common.def")
             )
           }
         }
@@ -97,7 +97,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the module is not valid") {
           it("should throw a compile error") { f =>
             an [CompileError] should be thrownBy(
-              SymbolTable.lookupName(f.table, f.state, "flop.core.other.+")
+              SymbolTable.lookupName(f.table, f.state, "flopcore.core.other.+")
             )
           }
         }
@@ -105,7 +105,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the name does not exist") {
           it("should return None") { f =>
             SymbolTable.lookupName(
-              f.table, f.state, "flop.core.common.thing",
+              f.table, f.state, "flopcore.core.common.thing",
             ) should equal(None)
           }
         }
@@ -142,7 +142,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
               SymbolTable.lookupName(
                 f.table, f.state, "+",
               ) should equal(
-                Some(Name.ModuleName("flop", List("core", "common"), "+"))
+                Some(Name.ModuleName("flopcore", List("core", "common"), "+"))
               )
             }
           }
@@ -178,7 +178,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
       describe("the var does not exist") {
         it("should return None") { f =>
           SymbolTable.lookupVar(
-            f.table, Name.ModuleName("flop", List("core", "common"), "thingy")
+            f.table, Name.ModuleName("flopcore", List("core", "common"), "thingy")
           ) should equal(None)
         }
       }

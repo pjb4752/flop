@@ -20,9 +20,9 @@ class CompileIfSpec extends BaseCompileSpec {
     describe("when the expressions function applications") {
       it("should produce the correct lua") { f =>
         f.compileFn(
-          """(if (flop.core.common.= testnum1 testnum2)
-            |  (flop.core.common.+ testnum1 1)
-            |  (flop.core.common.+ testnum2 1))""".stripMargin) should equal(
+          """(if (flopcore.core.common.= testnum1 testnum2)
+            |  (flopcore.core.common.+ testnum1 1)
+            |  (flopcore.core.common.+ testnum2 1))""".stripMargin) should equal(
           """local var_1
             |if (testnum1 == testnum2) then
             |var_1 = (testnum1 + 1.0)

@@ -5,7 +5,7 @@ import flop.analysis.Node
 
 object Core {
 
-  val rootName = "flop"
+  val rootName = "flopcore"
   val coreName = "core"
   val commonName = "common"
   val commonPath = List(coreName, commonName)
