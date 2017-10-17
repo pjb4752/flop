@@ -4,6 +4,7 @@ import org.scalatest._
 
 import flop.analysis._
 import flop.analysis.ModuleTree._
+import flop.stdlib.Core
 
 class ModuleTreeSpec extends fixture.FunSpec with Matchers {
 
@@ -12,12 +13,12 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
   def withFixture(test: OneArgTest) = {
     val moduleName = Name.ModuleName("root", List[String](), "module1")
     val childName = Name.ModuleName("root", List("level1"), "module2")
-    val childModule = Module.initial(childName)
+    val childModule = Module.initial(childName, Core.stdLibImports)
 
     val tree = ModuleTree(
       "root",
       Map(
-        moduleName.name -> Module.initial(moduleName),
+        moduleName.name -> Module.initial(moduleName, Core.stdLibImports),
         "level1" -> SubTree(
           "level1",
           Map(
@@ -37,7 +38,7 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
         val tree = ModuleTree.newRoot("test")
         val paths = List("path1", "path2")
         val moduleName = Name.ModuleName("test", paths, "module")
-        val module = Module.initial(moduleName)
+        val module = Module.initial(moduleName, Core.stdLibImports)
         val expectedTree = ModuleTree(
           "test",
           Map(
@@ -71,20 +72,20 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
             "path1" -> SubTree(
               "path1",
               Map(
-                m1Name.name -> Module.initial(m1Name)
+                m1Name.name -> Module.initial(m1Name, Core.stdLibImports)
               )
             )
           )
         )
         val m2Name = Name.ModuleName("test", List("path1", "path2"), "module")
-        val module = Module.initial(m2Name)
+        val module = Module.initial(m2Name, Core.stdLibImports)
         val expectedTree = ModuleTree(
           "test",
           Map(
             "path1" -> SubTree(
               "path1",
               Map(
-                m1Name.name -> Module.initial(m1Name),
+                m1Name.name -> Module.initial(m1Name, Core.stdLibImports),
                 "path2" -> SubTree(
                   "path2",
                   Map(m2Name.name -> module)
@@ -104,7 +105,7 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
     describe("the path is invalid") {
       it("should throw a compile error") { f =>
         val mName = Name.ModuleName("test", List("path1"), "path2")
-        val module = Module.initial(mName)
+        val module = Module.initial(mName, Core.stdLibImports)
         val tree = ModuleTree(
           "test",
           Map(
@@ -126,14 +127,14 @@ class ModuleTreeSpec extends fixture.FunSpec with Matchers {
       it("should throw a compile error") { f =>
         val otherName = Name.ModuleName("test", List("path1"), "other")
         val mName = Name.ModuleName("test", List("path1", "path2"), "module")
-        val module = Module.initial(mName)
+        val module = Module.initial(mName, Core.stdLibImports)
         val tree = ModuleTree(
           "test",
           Map(
             "path1" -> SubTree(
               "path1",
               Map(
-                otherName.name -> Module.initial(otherName),
+                otherName.name -> Module.initial(otherName, Core.stdLibImports),
                 "path2" -> SubTree(
                   "path2",
                   Map(mName.name -> module)

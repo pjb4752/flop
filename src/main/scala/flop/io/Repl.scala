@@ -8,13 +8,15 @@ import flop.analysis.ModuleTree._
 import flop.backend.{Backend, State => EState}
 import flop.reading.{Reading, SyntaxError}
 
+import flop.stdlib.Core
+
 object Repl {
 
   def repl(debug: Boolean = true): Unit = {
     val treeName = "__repl__"
 
     val defaultName = Name.ModuleName(treeName, List("core"), "user")
-    val defaultModule = Module.initial(defaultName)
+    val defaultModule = Module.initial(defaultName, Core.stdLibImports)
 
     val blankTable = SymbolTable.withRoot(treeName)
     val initialTable = SymbolTable.addModule(blankTable, defaultModule)

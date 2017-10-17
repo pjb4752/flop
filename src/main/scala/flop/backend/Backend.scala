@@ -19,9 +19,11 @@ object Backend {
 
   private def emitRequires(module: ModuleTree.Module): List[String] = {
     module.imports.map({ case (abbr, full) =>
-      val fullModulePath = full.paths :+ full.name
-      val requireName = localModuleName(full.paths :+ full.name)
-      val requirePath = fullModulePath.mkString(".")
+      val prefix = if (module.name.tree == full.tree) "" else full.tree
+
+      val fullModulePath = (prefix :: full.paths) :+ full.name
+      val requireName = localModuleName(fullModulePath)
+      val requirePath = fullModulePath.filter(_.nonEmpty).mkString(".")
 
       s"local ${requireName} = require('${requirePath}')"
     }).toList
@@ -53,15 +55,22 @@ object Backend {
 
   private def emitName(state: State, name: Name): String = name match {
     case lName @ (_:Name.LiteralName | _:Name.LocalName) => lName.name
-    case Name.ModuleName(t, p, n) => {
-      val currentName = state.module.name
-      val currentPaths = currentName.paths :+ currentName.name
+    case Name.ModuleName(t, p, n) => emitModuleName(state, t, p, n)
+    case Name.TraitFnName(Name.ModuleName(t, p, tn), n) => {
+      emitModuleName(state, t, p, n)
+    }
+  }
 
-      if (currentName.tree == t && currentPaths == p) {
-        s"${n}"
-      } else {
-        s"${localModuleName(p)}.${n}"
-      }
+  private def emitModuleName(state: State, tree: String, paths: List[String], name: String): String = {
+    val currentName = state.module.name
+    val currentPaths = currentName.paths :+ currentName.name
+
+    if (currentName.tree == tree && currentPaths == paths) {
+      s"${name}"
+    } else if (currentName.tree != tree) {
+      s"${localModuleName(tree :: paths)}.${name}"
+    } else {
+      s"${localModuleName(paths)}.${name}"
     }
   }
 
@@ -126,7 +135,7 @@ object Backend {
   }
 
   private def emitFlopApply(state: State, name: Name, args: List[Node]): String = {
-    emitPrefixApply(state, emitName(state, name), args)
+    emitPrefixApply(state, name, args)
   }
 
   private def emitExpr(state: State, expr: Node): String = expr match {
@@ -161,12 +170,13 @@ object Backend {
        |local ${symbol.name.name} = ${state.nextVarState().varName}""".stripMargin
   }
 
-  private def emitInfixApply(state: State, name: String, left: Node,
+  private def emitInfixApply(state: State, name: Name, left: Node,
       right: Node): String =
-    s"(${tryEmit(state)(left)} ${name} ${tryEmit(state)(right)})"
+    s"(${tryEmit(state)(left)} ${name.name} ${tryEmit(state)(right)})"
 
-  private def emitPrefixApply(state: State, name: String, args: List[Node]): String =
-    args.map(tryEmit(state)).mkString(name + "(", ", ", ")")
+  private def emitPrefixApply(state: State, name: Name, args: List[Node]): String =
+    args.map(tryEmit(state)).mkString(emitName(state, name) + "(", ", ", ")")
 
-  private def localModuleName(parts: List[String]): String = parts.mkString("_")
+  private def localModuleName(parts: List[String]): String =
+    parts.filter(_.nonEmpty).mkString("_")
 }

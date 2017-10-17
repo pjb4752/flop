@@ -50,12 +50,12 @@ object Node {
   case class FlopFn(eType: Type.Fn, params: Params, expr: Node) extends FnN(eType)
 
   abstract class LuaFn(eType: Type.Fn) extends FnN(eType) {
-    val name: String
+    val name: Name
     val arity = pTypes.length
   }
 
-  case class LuaIFn(eType: Type.Fn, val name: String) extends LuaFn(eType)
-  case class LuaPFn(eType: Type.Fn, val name: String) extends LuaFn(eType)
+  case class LuaIFn(eType: Type.Fn, val name: Name) extends LuaFn(eType)
+  case class LuaPFn(eType: Type.Fn, val name: Name) extends LuaFn(eType)
 
   abstract class ApplyN(args: List[Node], eType: Type) extends Node
 

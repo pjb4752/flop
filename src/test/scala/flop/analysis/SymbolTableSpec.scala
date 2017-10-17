@@ -262,7 +262,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
       describe("the tree does not exist") {
         it("should add the module") { f =>
           val newName = Name.ModuleName("foo", List("bar"), "baz")
-          val newModule = ModuleTree.Module.initial(newName)
+          val newModule = ModuleTree.Module.initial(newName, Core.stdLibImports)
           val newTree = ModuleTree(
             "foo",
             Map(
@@ -281,7 +281,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
       describe("the tree exists") {
         it("should add the module") { f =>
           val newName = Name.ModuleName("root", List("core"), "foo")
-          val newModule = ModuleTree.Module.initial(newName)
+          val newModule = ModuleTree.Module.initial(newName, Core.stdLibImports)
           val newTree = ModuleTree(
             "root",
             Map(

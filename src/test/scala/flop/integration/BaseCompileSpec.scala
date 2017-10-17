@@ -61,7 +61,7 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
       "value?" -> Module.Var("value?",
           Node.LuaPFn(
             Type.FreeFn(List(Type.Number, Type.Number), Type.Boolean),
-            "value__question"
+            Name.LocalName("value__question")
           )
         )
     )

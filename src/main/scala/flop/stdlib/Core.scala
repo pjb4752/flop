@@ -10,6 +10,10 @@ object Core {
   val commonName = "common"
   val commonPath = List(coreName, commonName)
 
+  val stdLibImports = Map(
+    "common" -> Name.ModuleName(rootName, List(coreName), commonName)
+  )
+
   /*
    * Definition of 'common' trait Show which allows string conversions
    * Function Defs:
@@ -120,37 +124,38 @@ object Core {
   /*
    * Implementation of 'common' traits for builtin types
    */
+
   val showTraitImpl = Map(
     ModuleTree.Module.TraitFn(showName.name, strName.name, Type.Number) ->
-      Node.LuaPFn(strType, "num_to_str"),
+      Node.LuaPFn(strType, Name.TraitFnName(showName, "num_to_str")),
     ModuleTree.Module.TraitFn(showName.name, strName.name, Type.Boolean) ->
-      Node.LuaPFn(strType, "bool_to_str")
+      Node.LuaPFn(strType, Name.TraitFnName(showName, "bool_to_str"))
     )
 
   val equalityTraitImpl = Map(
     ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Number) ->
-      Node.LuaIFn(eqType, "=="),
+      Node.LuaIFn(eqType, Name.LocalName("==")),
     ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.Number) ->
-      Node.LuaIFn(neqType, "~="),
+      Node.LuaIFn(neqType, Name.LocalName("~=")),
     ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Boolean) ->
-      Node.LuaIFn(eqType, "=="),
+      Node.LuaIFn(eqType, Name.LocalName("==")),
     ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.Boolean) ->
-      Node.LuaIFn(neqType, "~="),
+      Node.LuaIFn(neqType, Name.LocalName("~=")),
     ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.String) ->
-      Node.LuaIFn(eqType, "=="),
+      Node.LuaIFn(eqType, Name.LocalName("==")),
     ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.String) ->
-      Node.LuaIFn(neqType, "~=")
+      Node.LuaIFn(neqType, Name.LocalName("~="))
     )
 
   val numericTraitImpl = Map(
     ModuleTree.Module.TraitFn(numericName.name, plusName.name, Type.Number) ->
-      Node.LuaIFn(plusType, "+"),
+      Node.LuaIFn(plusType, Name.LocalName("+")),
     ModuleTree.Module.TraitFn(numericName.name, minusName.name, Type.Number) ->
-      Node.LuaIFn(minusType, "-"),
+      Node.LuaIFn(minusType, Name.LocalName("-")),
     ModuleTree.Module.TraitFn(numericName.name, multName.name, Type.Number) ->
-      Node.LuaIFn(multType, "*"),
+      Node.LuaIFn(multType, Name.LocalName("*")),
     ModuleTree.Module.TraitFn(numericName.name, divName.name, Type.Number) ->
-      Node.LuaIFn(divType, "/"),
+      Node.LuaIFn(divType, Name.LocalName("/")),
   )
 
   val traitImpls =
@@ -163,26 +168,31 @@ object Core {
    */
   val gtName = Name.ModuleName(rootName, commonPath, ">")
   val gtType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val gtVar = ModuleTree.Module.Var(gtName.name, Node.LuaIFn(gtType, ">"))
+  val gtVar = ModuleTree.Module.Var(gtName.name,
+    Node.LuaIFn(gtType, Name.LocalName(">")))
 
   val gteName = Name.ModuleName(rootName, commonPath, ">=")
   val gteType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val gteVar = ModuleTree.Module.Var(gteName.name, Node.LuaIFn(gteType, ">="))
+  val gteVar = ModuleTree.Module.Var(gteName.name,
+    Node.LuaIFn(gteType, Name.LocalName(">=")))
 
   val ltName = Name.ModuleName(rootName, commonPath, "<")
   val ltType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val ltVar = ModuleTree.Module.Var(ltName.name, Node.LuaIFn(ltType, "<"))
+  val ltVar = ModuleTree.Module.Var(ltName.name,
+    Node.LuaIFn(ltType, Name.LocalName("<")))
 
   val lteName = Name.ModuleName(rootName, commonPath, "<=")
   val lteType = Type.LuaFn(List(Type.Number, Type.Number), Type.Boolean)
-  val lteVar = ModuleTree.Module.Var(lteName.name, Node.LuaIFn(lteType, "<="))
+  val lteVar = ModuleTree.Module.Var(lteName.name,
+    Node.LuaIFn(lteType, Name.LocalName("<=")))
 
   /*
    * IO functions TODO make this is a trait?
    */
   val printName = Name.ModuleName(rootName, commonPath, "print")
   val printType = Type.LuaFn(List(Type.String), Type.Unit)
-  val printVar = ModuleTree.Module.Var(printName.name, Node.LuaPFn(printType, "print"))
+  val printVar = ModuleTree.Module.Var(printName.name,
+    Node.LuaPFn(printType, Name.LocalName("print")))
 
   /*
    * Definition of 'common' module

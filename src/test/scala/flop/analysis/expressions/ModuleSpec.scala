@@ -5,6 +5,7 @@ import org.scalatest._
 import flop.analysis.{CompileError, Name, Node, Type}
 import flop.analysis.ModuleTree.{Module => FlopModule}
 import flop.reading.Form
+import flop.stdlib.Core
 
 class ModuleSpec extends BaseAnalysisSpec {
 
@@ -45,7 +46,7 @@ class ModuleSpec extends BaseAnalysisSpec {
 
         val actualName = Name.ModuleName("foo", List("bar"), "baz")
         Module.analyze(f.table, args) should equal(
-          FlopModule.initial(actualName))
+          FlopModule.initial(actualName, Core.stdLibImports))
       }
     }
   }

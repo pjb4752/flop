@@ -4,6 +4,7 @@ import flop.analysis._
 import flop.analysis.Node._
 import flop.reading.Form
 import flop.reading.Form._
+import flop.stdlib.Core
 
 import flop.analysis.ModuleTree.{Module => FlopModule}
 
@@ -34,7 +35,8 @@ object Module {
     val root :: rest = nameParts
     val name :: paths = rest.reverse
     val moduleName = Name.ModuleName(root, paths, name)
-    FlopModule.initial(moduleName).copy(imports = analyzedImports)
+    val initialModule = FlopModule.initial(moduleName, Core.stdLibImports)
+    initialModule.copy(imports = initialModule.imports ++ analyzedImports)
   }
 
   private def defaultMessage(target: String): String = {

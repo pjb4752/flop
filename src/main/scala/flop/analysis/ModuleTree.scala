@@ -32,8 +32,8 @@ case object ModuleTree {
     case class TraitFn(traitName: String, fnName: String, selfType: Type)
     type TraitImpls = Map[TraitFn, Node.FnN]
 
-    def initial(name: Name.ModuleName): Module = {
-      val initialImports = Map[String, Name.ModuleName]()
+    def initial(name: Name.ModuleName,
+        initialImports: Map[String, Name.ModuleName]): Module = {
       val initialTraits = Map[String, Trait]()
       val initialTraitImpls = Map[TraitFn, Node.FnN]()
       val initialVars = Map[String, Var]()
