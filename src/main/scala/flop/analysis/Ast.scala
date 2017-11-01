@@ -28,13 +28,7 @@ object Node {
 
   case class SymLit(name: Name, val eType: Type) extends Node
 
-  case class ListLit(value: List[Node]) extends Node {
-    val eType = Type.List
-  }
-
-  case class MapLit(value: Map[Node, Node]) extends Node {
-    val eType = Type.Map
-  }
+  case class MapLit(value: Map[Node, Node], val eType: Type) extends Node
 
   case class DefN(name: SymLit, expr: Node, eType: Type) extends Node
 

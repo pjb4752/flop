@@ -6,6 +6,7 @@ import flop.analysis._
 import flop.analysis.ModuleTree._
 import flop.backend.{Backend, State => EState}
 import flop.reading.{Reading}
+import flop.stdlib.Core
 
 class BaseCompileSpec extends fixture.FunSpec with Matchers {
 
@@ -50,7 +51,7 @@ class BaseCompileSpec extends fixture.FunSpec with Matchers {
 
   private def makeCurrentModule(root: String, imported: Module): Module = {
     val path = List[String]("core")
-    val imports = Map(imported.name.name -> imported.name)
+    val imports = Core.stdLibImports + (imported.name.name -> imported.name)
     val traits = Map[String, Module.Trait]()
     val traitImpls = Map[ModuleTree.Module.TraitFn, Node.FnN]()
     val vars = Map[String, Module.Var](

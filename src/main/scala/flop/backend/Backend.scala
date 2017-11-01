@@ -40,8 +40,6 @@ object Backend {
     case Node.NumLit(v) => v.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
     case Node.SymLit(n, _) => emitName(state, n)
-    case Node.ListLit(v) => emitList(state, v)
-    case Node.MapLit(m) => emitMap(state, m)
     case Node.DefN(n, v, _) => emitDef(state, n, v)
     case Node.LetN(b, e, _) => emitLet(state, b, e)
     case Node.IfN(t, i, e, _) => emitIf(state, t, i, e)
@@ -72,22 +70,6 @@ object Backend {
     } else {
       s"${localModuleName(paths)}.${name}"
     }
-  }
-
-  // TODO handle complex expression in list members, like let form
-  private def emitList(state: State, list: List[Node]): String = {
-    val emitFn = tryEmit(state) _
-    val members = list.map(emitFn).mkString(", ")
-
-    s"List.new(${members})"
-  }
-
-  // TODO handle complex expression in map members, like let form
-  private def emitMap(state: State, map: Map[Node, Node]): String = {
-    val emitFn = tryEmit(state) _
-    val members = map.map({ case (k, v) => s"${emitFn(k)}, ${emitFn(v)}" })
-
-    s"Map.new(${members.mkString(", ")})"
   }
 
   private def emitDef(state: State, name: Node.SymLit, value: Node): String =

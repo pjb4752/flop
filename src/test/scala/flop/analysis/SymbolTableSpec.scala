@@ -5,6 +5,7 @@ import org.scalatest._
 import flop.analysis._
 import flop.reading._
 import flop.stdlib.Core
+import flop.stdlib.core.Common
 
 class SymbolTableSpec extends fixture.FunSpec with Matchers {
 
@@ -48,8 +49,8 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
     describe("the module exists") {
       it("should return the module") { f =>
         SymbolTable.findModule(
-          f.table, Core.rootName, Core.commonPath
-        ) should equal(Some(Core.commonModule))
+          f.table, Core.rootName, Common.path
+        ) should equal(Some(Common.module))
       }
     }
 

@@ -5,6 +5,7 @@ import flop.analysis.ModuleTree.Module._
 import flop.analysis.Name._
 import flop.reading.Form
 import flop.stdlib.Core
+import flop.stdlib.core.Common
 
 case class SymbolTable(trees: Map[String, ModuleTree])
 
@@ -186,7 +187,7 @@ object SymbolTable {
       val varName = ModuleName(treeName, paths, nameParts.last)
       val currentModule = getModule(table, state.currentModule)
 
-      val isStdlibModule = mName == Core.commonModule.name
+      val isStdlibModule = mName == Common.module.name
       val isModuleImported = currentModule.imports.values.toList.contains(mName)
 
       if (!isStdlibModule && !isModuleImported) {
@@ -241,10 +242,10 @@ object SymbolTable {
 
   private def lookupGlobalName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     val flopTree = table.trees(Core.rootName)
-    val commonModule = ModuleTree.findModule(flopTree, Core.commonPath)
+    val commonModule = ModuleTree.findModule(flopTree, Common.path)
 
     commonModule.flatMap(maybeMod => maybeMod.vars.get(raw)).map(v =>
-      ModuleName(Core.rootName, Core.commonPath, v.name))
+      ModuleName(Core.rootName, Common.path, v.name))
   }
 
   private def lookupModuleType(table: SymbolTable, name: ModuleName): Type = {

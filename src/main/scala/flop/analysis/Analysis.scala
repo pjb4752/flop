@@ -50,7 +50,6 @@ object Analysis {
     case Form.StrF(v) => Node.StrLit(v)
     case Form.SymF(v) => analyzeSymbol(table, state, v)
     case Form.ListF(l) => analyzeList(table, state, l)
-    case Form.MapF(m) => analyzeMap(table, state, m)
   }
 
   private def analyzeSymbol(table: SymbolTable, state: State, raw: String): Node = {
@@ -68,12 +67,7 @@ object Analysis {
 
   private def analyzeList(table: SymbolTable, state: State, list: List[Form]): Node = list match {
     case op :: args => analyzeOp(table, state, op, args)
-    case _ => Node.ListLit(List[Node]())
-  }
-
-  private def analyzeMap(table: SymbolTable, state: State, map: Map[Form, Form]): Node = {
-    val analyzeFn = tryAnalyze(table, state.copy(atTopLevel = false)) _
-    Node.MapLit(map.map({ case (k ,v) => (analyzeFn(k), analyzeFn(v)) }))
+    case _ => throw CompileError.syntaxError("", "empty expression ()")
   }
 
   private def analyzeOp(table: SymbolTable, state: State, op: Form, args: List[Form]): Node = op match {
@@ -83,7 +77,6 @@ object Analysis {
       case "if" => If.analyze(table, state, args)
       case "fn" => Fn.analyze(table, state, args)
       case "trait" => Trait.analyze(table, state, args)
-      case "list" => ListExpr.analyze(table, state, args)
       case _ => Apply.analyze(table, state, s, args)
     }
     case u => {
