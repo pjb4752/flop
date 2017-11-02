@@ -35,6 +35,7 @@ object Type {
   abstract class Aggregate(val types: SList[Type]) extends Type
 
   case class List(override val types: SList[Type]) extends Aggregate(types)
+  case class Vector(override val types: SList[Type]) extends Aggregate(types)
   case class Map(override val types: SList[Type]) extends Aggregate(types)
 
 }

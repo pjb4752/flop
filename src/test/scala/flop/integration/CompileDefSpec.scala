@@ -9,19 +9,25 @@ class CompileDefSpec extends BaseCompileSpec {
   describe("compiling def special form") {
     describe("defining from literal values") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x 5)") should equal("local x = 5.0")
+        f.compileFn("(def x 5)") should equal("local x = 5")
       }
     }
 
     describe("defining from simple operations") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x (flopcore.core.common.+ 1 2))") should equal("local x = (1.0 + 2.0)")
+        f.compileFn("""
+          (def x
+            (flopcore.core.common.+ 1 2))"""
+        ) should equal("local x = (1 + 2)")
       }
     }
 
     describe("defining a function") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x (fn num {a num b num} (flopcore.core.common.+ a b)))") should equal(
+        f.compileFn("""
+          (def x
+            (fn num {a num b num}
+              (flopcore.core.common.+ a b)))""") should equal(
           """local x = function(a, b)
             |local var_1
             |var_1 = (a + b)

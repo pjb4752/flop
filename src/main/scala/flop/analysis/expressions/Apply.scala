@@ -33,6 +33,7 @@ object Apply {
       val mapped = a.types.map(w => getWrappedType(w, gTypes))
       a match {
         case _: Type.List => Type.List(mapped)
+        case _: Type.Vector => Type.Vector(mapped)
         case _: Type.Map => Type.Map(mapped)
       }
     }

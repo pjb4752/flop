@@ -2,6 +2,8 @@ package flop.reading
 
 import scala.collection.immutable.ListMap
 
+import flop.stdlib.core.Vector
+
 object Reading {
 
   def read(input: List[Char]): List[Form] = {
@@ -40,6 +42,8 @@ object Reading {
       readSym(input)
     } else if (isListOpen(char)) {
       readList(input)
+    } else if (isVectorOpen(char)) {
+      readVector(input)
     } else if (isMapOpen(char)) {
       readMap(input)
     } else {
@@ -65,6 +69,10 @@ object Reading {
   private def isListOpen(char: Char): Boolean = char == '('
 
   private def isListClose(char: Char): Boolean = char == ')'
+
+  private def isVectorOpen(char: Char): Boolean = char == '['
+
+  private def isVectorClose(char: Char): Boolean = char == ']'
 
   private def isMapOpen(char: Char): Boolean = char == '{'
 
@@ -142,6 +150,28 @@ object Reading {
     }
 
     readList0(input.tail, List[Form]()) // chop off opening paren
+  }
+
+  private type VectorResult = Tuple2[List[Char], Form.ListF]
+  private def readVector(input: List[Char]): VectorResult = {
+    @scala.annotation.tailrec
+    def readVector0(input: List[Char], output: List[Form]): VectorResult = {
+      if (input.isEmpty) {
+        throw SyntaxError("unexpected EOF, expecting ']'")
+      } else if (isVectorClose(input.head)) {
+        val fn = Form.SymF(Vector.newName.toFlop)
+        print(fn)
+        (input.tail, Form.ListF(fn :: output.reverse)) // chop off closing bracket
+      } else if (isBlank(input.head)) {
+        val in = ignoreBlank(input)
+        readVector0(in, output)
+      } else {
+        val (in, form) = tryRead(input)
+        readVector0(in, form :: output)
+      }
+    }
+
+    readVector0(input.tail, List[Form]()) // chop off opening bracket
   }
 
   private type MapResult = Tuple2[List[Char], Form.MapF]

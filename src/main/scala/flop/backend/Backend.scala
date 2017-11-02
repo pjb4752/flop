@@ -37,7 +37,7 @@ object Backend {
   private def tryEmit(state: State)(node: Node): String = node match {
     case Node.TrueLit => "true"
     case Node.FalseLit => "false"
-    case Node.NumLit(v) => v.toString
+    case Node.NumLit(v) => v.toInt.toString
     case Node.StrLit(v) => "\"%s\"".format(v)
     case Node.SymLit(n, _) => emitName(state, n)
     case Node.DefN(n, v, _) => emitDef(state, n, v)

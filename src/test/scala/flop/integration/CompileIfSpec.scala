@@ -9,10 +9,10 @@ class CompileIfSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn("(if (value? 1 2) 5 3)") should equal(
           """local var_1
-            |if value?(1.0, 2.0) then
-            |var_1 = 5.0
+            |if value?(1, 2) then
+            |var_1 = 5
             |else
-            |var_1 = 3.0
+            |var_1 = 3
             |end""".stripMargin)
       }
     }
@@ -25,9 +25,9 @@ class CompileIfSpec extends BaseCompileSpec {
             |  (flopcore.core.common.+ testnum2 1))""".stripMargin) should equal(
           """local var_1
             |if (testnum1 == testnum2) then
-            |var_1 = (testnum1 + 1.0)
+            |var_1 = (testnum1 + 1)
             |else
-            |var_1 = (testnum2 + 1.0)
+            |var_1 = (testnum2 + 1)
             |end""".stripMargin)
       }
     }

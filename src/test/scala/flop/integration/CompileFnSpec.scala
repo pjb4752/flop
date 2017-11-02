@@ -9,7 +9,9 @@ class CompileFnSpec extends BaseCompileSpec {
   describe("compiling fn special form") {
     describe("compilation of simple functions") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(fn num {a num b num} (flopcore.core.common.+ a b))") should equal(
+        f.compileFn("""
+          (fn num {a num b num}
+            (flopcore.core.common.+ a b))""") should equal(
           """function(a, b)
             |local var_1
             |var_1 = (a + b)
@@ -50,7 +52,7 @@ class CompileFnSpec extends BaseCompileSpec {
             |local var_1
             |local var_2
             |do
-            |local b = 5.0
+            |local b = 5
             |var_2 = (a + b)
             |end
             |var_1 = var_2

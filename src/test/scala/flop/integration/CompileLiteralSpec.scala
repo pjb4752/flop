@@ -9,7 +9,7 @@ class CompileLiteralSpec extends BaseCompileSpec {
   describe("compiling literals") {
     describe("when the literal is a number") {
       it("should produce the correct lua") { f =>
-        f.compileFn("5") should equal("5.0")
+        f.compileFn("5") should equal("5")
       }
     }
 

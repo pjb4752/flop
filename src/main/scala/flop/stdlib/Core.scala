@@ -12,7 +12,8 @@ object Core {
 
   val stdLibImports = Map(
     Common.name -> Common.moduleName,
-    List.name -> List.moduleName
+    List.name -> List.moduleName,
+    Vector.name -> Vector.moduleName
   )
 
   /*
@@ -24,7 +25,8 @@ object Core {
         coreName,
         Map(
           Common.name -> Common.module,
-          List.name -> List.module
+          List.name -> List.module,
+          Vector.name -> Vector.module
         )
       )
     )
