@@ -38,4 +38,6 @@ object Type {
   case class Vector(override val types: SList[Type]) extends Aggregate(types)
   case class Map(override val types: SList[Type]) extends Aggregate(types)
 
+  case class Pair(override val types: SList[Type]) extends Aggregate(types)
+
 }

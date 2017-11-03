@@ -2,7 +2,7 @@ package flop.reading
 
 import scala.collection.immutable.ListMap
 
-import flop.stdlib.core.Vector
+import flop.stdlib.core.{Pair, Vector}
 
 object Reading {
 
@@ -46,6 +46,8 @@ object Reading {
       readVector(input)
     } else if (isMapOpen(char)) {
       readMap(input)
+    } else if (isReadTableChar(char)) {
+      readTable(input)
     } else {
       throw SyntaxError(s"invalid form starting with: ${char}")
     }
@@ -77,6 +79,12 @@ object Reading {
   private def isMapOpen(char: Char): Boolean = char == '{'
 
   private def isMapClose(char: Char): Boolean = char == '}'
+
+  private def isReadTableChar(char: Char): Boolean = char == '#'
+
+  private def isPairOpen(char: Char): Boolean = char == '['
+
+  private def isPairClose(char: Char): Boolean = char == ']'
 
   @scala.annotation.tailrec
   private def ignoreBlank(input: List[Char]): List[Char] = {
@@ -152,15 +160,13 @@ object Reading {
     readList0(input.tail, List[Form]()) // chop off opening paren
   }
 
-  private type VectorResult = Tuple2[List[Char], Form.ListF]
-  private def readVector(input: List[Char]): VectorResult = {
+  private def readVector(input: List[Char]): ListResult = {
     @scala.annotation.tailrec
-    def readVector0(input: List[Char], output: List[Form]): VectorResult = {
+    def readVector0(input: List[Char], output: List[Form]): ListResult = {
       if (input.isEmpty) {
         throw SyntaxError("unexpected EOF, expecting ']'")
       } else if (isVectorClose(input.head)) {
         val fn = Form.SymF(Vector.newName.toFlop)
-        print(fn)
         (input.tail, Form.ListF(fn :: output.reverse)) // chop off closing bracket
       } else if (isBlank(input.head)) {
         val in = ignoreBlank(input)
@@ -198,5 +204,43 @@ object Reading {
     }
 
     readMap0(input.tail, List[Form]()) // chop off opening bracket
+  }
+
+  private def readTable(input: List[Char]): ListResult = {
+    val rest = input.tail
+
+    if (rest.isEmpty) {
+      throw SyntaxError("unexpected #")
+    }
+
+    val char = rest.head
+    if (isPairOpen(char)) {
+      readPair(rest)
+    } else {
+      throw SyntaxError(s"invalid form starting with: '#${char}'")
+    }
+  }
+
+  private def readPair(input: List[Char]): ListResult = {
+    @scala.annotation.tailrec
+    def readPair0(input: List[Char], output: List[Form]): ListResult = {
+      if (input.isEmpty) {
+        throw SyntaxError("unexpected EOF, expecting ']'")
+      } else if (isPairClose(input.head)) {
+        if (output.length != 2) {
+          throw SyntaxError("wrong number of forms in pair literal")
+        }
+        val fn = Form.SymF(Pair.newName.toFlop)
+        (input.tail, Form.ListF(fn :: output.reverse))
+      } else if (isBlank(input.head)) {
+        val in = ignoreBlank(input)
+        readPair0(in, output)
+      } else {
+        val (in, form) = tryRead(input)
+        readPair0(in, form :: output)
+      }
+    }
+
+    readPair0(input.tail, List[Form]())
   }
 }
