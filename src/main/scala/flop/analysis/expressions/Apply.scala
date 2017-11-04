@@ -135,6 +135,7 @@ object Apply {
           val mType = getNodeType(node)
 
           val (wrappedType, newGt) = packType match {
+            case a: Type.Aggregate => analyzeAgg(a, node, mType, i, gt)
             case Type.Generic(name) => analyzeGenType(name, mType, gt)
             case _ => (packType, gt)
           }
@@ -166,7 +167,7 @@ object Apply {
     }
 
     def analyzeAgg(agg: Type.Aggregate, arg: Node, aType: Type, index: Int,
-        gTypes: GTypes): GTypes = {
+        gTypes: GTypes): (Type, GTypes) = {
 
       if (agg.getClass != aType.getClass) {
         val target = s"${op.toString}, param: ${index}"
@@ -174,7 +175,7 @@ object Apply {
       }
       val argType = aType.asInstanceOf[Type.Aggregate]
 
-      agg.types.zipWithIndex.foldLeft(gTypes)({ case (gt, (t, i)) =>
+      val newGTypes = agg.types.zipWithIndex.foldLeft(gTypes)({ case (gt, (t, i)) =>
         val curArgType = argType.types(i)
 
         val (realType, newGt) = t match {
@@ -188,6 +189,8 @@ object Apply {
         }
         newGt
       })
+
+      (argType, newGTypes)
     }
 
     def analyzeArgs0(arguments: SList[(Form, Int)], gTypes: GTypes):
@@ -205,7 +208,7 @@ object Apply {
             val aType = getNodeType(arg)
 
             val newGTypes = pType match {
-              case a: Type.Aggregate => analyzeAgg(a, arg, aType, i, gTypes)
+              case a: Type.Aggregate => analyzeAgg(a, arg, aType, i, gTypes)._2
               case _ => analyzeArg(pType, arg, aType, i, gTypes)
             }
 

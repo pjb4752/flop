@@ -3,7 +3,7 @@ package flop.stdlib.core
 import flop.analysis.{ModuleTree, Name, Node, Type}
 import flop.analysis.Node
 
-import scala.collection.immutable.{List => SList}
+import scala.collection.immutable.{List => SList, Map => SMap}
 
 object Common {
 
@@ -23,7 +23,7 @@ object Common {
   val strName = Name.TraitFnName(showName, "str")
   val strType = Type.TraitFn(SList(Type.Self), Type.String)
   val showTrait = ModuleTree.Module.Trait(showName.name,
-    Map(
+    SMap(
       strName.name -> ModuleTree.Module.FnDef(
         strName.name,
         Node.FnDef(
@@ -47,7 +47,7 @@ object Common {
   val eqType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Boolean)
   val neqType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Boolean)
   val equalityTrait = ModuleTree.Module.Trait(equalityName.name,
-    Map(
+    SMap(
       eqName.name -> ModuleTree.Module.FnDef(
         eqName.name,
         Node.FnDef(
@@ -85,7 +85,7 @@ object Common {
   val multType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Self)
   val divType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Self)
   val numericTrait = ModuleTree.Module.Trait(numericName.name,
-    Map(
+    SMap(
       plusName.name -> ModuleTree.Module.FnDef(
         plusName.name,
         Node.FnDef(
@@ -124,14 +124,14 @@ object Common {
   /*
    * Implementation of 'common' traits for builtin types
    */
-  val showTraitImpl = Map(
+  val showTraitImpl = SMap(
     ModuleTree.Module.TraitFn(showName.name, strName.name, Type.Number) ->
       Node.LuaPFn(strType, Name.TraitFnName(showName, "num_to_str")),
     ModuleTree.Module.TraitFn(showName.name, strName.name, Type.Boolean) ->
       Node.LuaPFn(strType, Name.TraitFnName(showName, "bool_to_str"))
     )
 
-  val equalityTraitImpl = Map(
+  val equalityTraitImpl = SMap(
     ModuleTree.Module.TraitFn(equalityName.name, eqName.name, Type.Number) ->
       Node.LuaIFn(eqType, Name.LocalName("==")),
     ModuleTree.Module.TraitFn(equalityName.name, neqName.name, Type.Number) ->
@@ -146,7 +146,7 @@ object Common {
       Node.LuaIFn(neqType, Name.LocalName("~="))
     )
 
-  val numericTraitImpl = Map(
+  val numericTraitImpl = SMap(
     ModuleTree.Module.TraitFn(numericName.name, plusName.name, Type.Number) ->
       Node.LuaIFn(plusType, Name.LocalName("+")),
     ModuleTree.Module.TraitFn(numericName.name, minusName.name, Type.Number) ->
@@ -198,14 +198,14 @@ object Common {
    */
   val module = ModuleTree.Module(
     moduleName,
-    Map[String, Name.ModuleName](),
-    Map(
+    SMap[String, Name.ModuleName](),
+    SMap(
       showName.name -> showTrait,
       equalityName.name -> equalityTrait,
       numericName.name -> numericTrait
     ),
     commonTraitImpls,
-    Map(
+    SMap(
       gtName.name -> gtVar,
       gteName.name -> gteVar,
       ltName.name -> ltVar,

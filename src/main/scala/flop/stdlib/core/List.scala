@@ -3,7 +3,7 @@ package flop.stdlib.core
 import flop.analysis.{ModuleTree, Name, Node, Type}
 import flop.analysis.Node
 
-import scala.collection.immutable.{List => SList}
+import scala.collection.immutable.{List => SList, Map => SMap}
 
 object List {
 
@@ -41,10 +41,10 @@ object List {
    */
   val module = ModuleTree.Module(
     moduleName,
-    Map[String, Name.ModuleName](),
-    Map[String, ModuleTree.Module.Trait](),
-    Map[ModuleTree.Module.TraitFn, Node.FnN](),
-    Map(
+    SMap[String, Name.ModuleName](),
+    SMap[String, ModuleTree.Module.Trait](),
+    SMap[ModuleTree.Module.TraitFn, Node.FnN](),
+    SMap(
       newName.name -> newVar,
       headName.name -> headVar,
       tailName.name -> tailVar
