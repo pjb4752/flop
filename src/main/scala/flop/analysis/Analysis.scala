@@ -5,7 +5,7 @@ import scala.collection.immutable.{Map => SMap}
 import flop.reading.Form
 import flop.reading.Form._
 import flop.stdlib.Core
-import flop.stdlib.core.{Map, Pair}
+import flop.stdlib.core.{Map, Pair, Vector}
 
 import flop.analysis.expressions._
 
@@ -53,6 +53,7 @@ object Analysis {
     case Form.StrF(v) => Node.StrLit(v)
     case Form.SymF(v) => analyzeSymbol(table, state, v)
     case Form.ListF(l) => analyzeList(table, state, l)
+    case Form.VectorF(v) => analyzeVector(table, state, v)
     case Form.MapF(m) => analyzeMap(table, state, m)
   }
 
@@ -88,6 +89,11 @@ object Analysis {
                        |  ${op} is not a fn or special form""".stripMargin
       throw CompileError.TypeError(message)
     }
+  }
+
+  private def analyzeVector(table: SymbolTable, state: State, vector: List[Form]): Node = {
+    val vectorFnName = Vector.newName.toFlop
+    Apply.analyze(table, state, vectorFnName, vector)
   }
 
   private def analyzeMap(table: SymbolTable, state: State, map: SMap[Form, Form]): Node = {

@@ -160,14 +160,14 @@ object Reading {
     readList0(input.tail, List[Form]()) // chop off opening paren
   }
 
-  private def readVector(input: List[Char]): ListResult = {
+  private type VectorResult = Tuple2[List[Char], Form.VectorF]
+  private def readVector(input: List[Char]): VectorResult = {
     @scala.annotation.tailrec
-    def readVector0(input: List[Char], output: List[Form]): ListResult = {
+    def readVector0(input: List[Char], output: List[Form]): VectorResult = {
       if (input.isEmpty) {
         throw SyntaxError("unexpected EOF, expecting ']'")
       } else if (isVectorClose(input.head)) {
-        val fn = Form.SymF(Vector.newName.toFlop)
-        (input.tail, Form.ListF(fn :: output.reverse)) // chop off closing bracket
+        (input.tail, Form.VectorF(output.reverse))
       } else if (isBlank(input.head)) {
         val in = ignoreBlank(input)
         readVector0(in, output)
@@ -177,7 +177,7 @@ object Reading {
       }
     }
 
-    readVector0(input.tail, List[Form]()) // chop off opening bracket
+    readVector0(input.tail, List[Form]())
   }
 
   private type MapResult = Tuple2[List[Char], Form.MapF]

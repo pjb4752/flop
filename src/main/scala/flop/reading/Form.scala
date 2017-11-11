@@ -8,5 +8,6 @@ object Form {
   case class StrF(value: String) extends Form
   case class SymF(value: String) extends Form
   case class ListF(value: List[Form]) extends Form
+  case class VectorF(value: List[Form]) extends Form
   case class MapF(value: Map[Form, Form]) extends Form
 }
