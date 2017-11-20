@@ -17,7 +17,7 @@ class CompileDefSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn("""
           (def x
-            (flopcore.core.common.+ 1 2))"""
+            (+ 1 2))"""
         ) should equal("local x = (1 + 2)")
       }
     }
@@ -27,7 +27,7 @@ class CompileDefSpec extends BaseCompileSpec {
         f.compileFn("""
           (def x
             (fn num {a num b num}
-              (flopcore.core.common.+ a b)))""") should equal(
+              (+ a b)))""") should equal(
           """local x = function(a, b)
             |local var_1
             |var_1 = (a + b)

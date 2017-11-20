@@ -244,8 +244,16 @@ object SymbolTable {
     val flopTree = table.trees(Core.rootName)
     val commonModule = ModuleTree.findModule(flopTree, Common.path)
 
-    commonModule.flatMap(maybeMod => maybeMod.vars.get(raw)).map(v =>
+    val varName = commonModule.flatMap(maybeMod => maybeMod.vars.get(raw)).map(v =>
       ModuleName(Core.rootName, Common.path, v.name))
+
+    if (varName.isEmpty) {
+      commonModule.flatMap(maybeMod =>
+        maybeMod.traits.values.find(t => t.fnDefs.contains(raw)).
+        map(t => TraitFnName(ModuleName(Core.rootName, Common.path, t.name), raw)))
+    } else {
+      varName
+    }
   }
 
   private def lookupModuleType(table: SymbolTable, name: ModuleName): Type = {

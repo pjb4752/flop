@@ -137,14 +137,31 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
             }
           }
 
-          // TODO fix this
           describe("the name is global") {
-            it("should return the name") { f =>
-              SymbolTable.lookupName(
-                f.table, f.state, "+",
-              ) should equal(
-                Some(Name.ModuleName("flopcore", List("core", "common"), "+"))
-              )
+            describe("the name is a var") {
+              val path = List("core", "common")
+              val moduleName = Name.ModuleName("flopcore", path, "print")
+
+              it("should return the name") { f =>
+                SymbolTable.lookupName(
+                  f.table, f.state, "print",
+                ) should equal(
+                  Some(moduleName)
+                )
+              }
+            }
+
+            describe("the name is a trait fn") {
+              it("should return the name") { f =>
+                val path = List("core", "common")
+                val moduleName = Name.ModuleName("flopcore", path, "Numeric")
+
+                SymbolTable.lookupName(
+                  f.table, f.state, "+",
+                ) should equal(
+                  Some(Name.TraitFnName(moduleName, "+"))
+                )
+              }
             }
           }
         }

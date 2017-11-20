@@ -21,7 +21,7 @@ class CompileLetSpec extends BaseCompileSpec {
         f.compileFn("""
           (let (x
             (fn num {a num b num}
-              (flopcore.core.common.+ a b)))
+              (+ a b)))
             x)""") should equal(
           """local var_1
             |do
@@ -38,8 +38,8 @@ class CompileLetSpec extends BaseCompileSpec {
     describe("when the value is the result of a function") {
       it("should produce the correct lua") { f =>
         f.compileFn("""
-          (let (x (flopcore.core.common.+ 1 2))
-            (flopcore.core.common.+ 1 x))""") should equal(
+          (let (x (+ 1 2))
+            (+ 1 x))""") should equal(
           """local var_1
             |do
             |local x = (1 + 2)
@@ -52,7 +52,7 @@ class CompileLetSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn(
           """(let (x 5)
-            |  (let (y (flopcore.core.common.+ x 5)) y))""".stripMargin) should equal(
+            |  (let (y (+ x 5)) y))""".stripMargin) should equal(
           """local var_1
             |do
             |local x = 5
@@ -70,8 +70,8 @@ class CompileLetSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn(
           """(let (x 5)
-            |  (let (y (flopcore.core.common.+ x 5))
-            |    (let (z (flopcore.core.common.+ y 3)) z)))""".stripMargin) should equal(
+            |  (let (y (+ x 5))
+            |    (let (z (+ y 3)) z)))""".stripMargin) should equal(
           """local var_1
             |do
             |local x = 5
@@ -95,7 +95,7 @@ class CompileLetSpec extends BaseCompileSpec {
         f.compileFn("""
           (let (x
             (let (y 5) y))
-              (flopcore.core.common.+ 1 x))""") should equal(
+              (+ 1 x))""") should equal(
           """local var_1
             |do
             |local var_2
@@ -114,7 +114,7 @@ class CompileLetSpec extends BaseCompileSpec {
         f.compileFn(
           """(let (x (if (> testnum1 testnum2) testnum1 testnum2)
             |      m 5)
-            |  (flopcore.core.common.+ x m))""".stripMargin) should equal(
+            |  (+ x m))""".stripMargin) should equal(
           """local var_1
             |do
             |local var_2

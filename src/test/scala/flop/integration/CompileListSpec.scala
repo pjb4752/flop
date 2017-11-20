@@ -30,8 +30,8 @@ class CompileListSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn("""
           (flopcore.core.list.new
-            (flopcore.core.common.+ 1 2)
-            (flopcore.core.common.+ 3 4))""") should equal(
+            (+ 1 2)
+            (+ 3 4))""") should equal(
           "flopcore_core_list.new((1 + 2), (3 + 4))")
       }
     }

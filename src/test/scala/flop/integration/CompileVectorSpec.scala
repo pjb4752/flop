@@ -20,9 +20,7 @@ class CompileVectorSpec extends BaseCompileSpec {
 
     describe("creating a vector from expressions") {
       it("should produce the correct lua") { f =>
-        f.compileFn("""[
-          (flopcore.core.common.+ 1 2)
-          (flopcore.core.common.+ 3 4)]""") should equal(
+        f.compileFn("[(+ 1 2) (+ 3 4)]") should equal(
           "flopcore_core_vector.new((1 + 2), (3 + 4))")
       }
     }

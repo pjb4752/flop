@@ -16,7 +16,7 @@ class CompileMapSpec extends BaseCompileSpec {
       it("should produce the correct lua") { f =>
         f.compileFn("""
           {
-            (flopcore.core.common.+ 1 2) (flopcore.core.common.+ 3 4)
+            (+ 1 2) (+ 3 4)
           }""") should equal(
             "flopcore_core_map.new(flopcore_core_pair.new((1 + 2), (3 + 4)))")
       }
