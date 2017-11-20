@@ -67,6 +67,52 @@ object Common {
     )
   )
 
+  val orderingName = Name.ModuleName(rootName, path, "Ordering")
+  val ltName = Name.TraitFnName(orderingName, "<")
+  val gtName = Name.TraitFnName(orderingName, ">")
+  val lteName = Name.TraitFnName(orderingName, "<=")
+  val gteName = Name.TraitFnName(orderingName, ">=")
+  val ltType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Boolean)
+  val gtType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Boolean)
+  val lteType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Boolean)
+  val gteType = Type.TraitFn(SList(Type.Self, Type.Self), Type.Boolean)
+  val orderingTrait = ModuleTree.Module.Trait(orderingName.name,
+    SMap(
+      ltName.name -> ModuleTree.Module.FnDef(
+        ltName.name,
+        Node.FnDef(
+          Node.SymLit(orderingName, Type.Trait),
+          Node.SymLit(ltName, ltType),
+          ltType
+        )
+      ),
+      gtName.name -> ModuleTree.Module.FnDef(
+        gtName.name,
+        Node.FnDef(
+          Node.SymLit(orderingName, Type.Trait),
+          Node.SymLit(gtName, gtType),
+          gtType
+        )
+      ),
+      lteName.name -> ModuleTree.Module.FnDef(
+        lteName.name,
+        Node.FnDef(
+          Node.SymLit(orderingName, Type.Trait),
+          Node.SymLit(lteName, lteType),
+          lteType
+        )
+      ),
+      gteName.name -> ModuleTree.Module.FnDef(
+        gteName.name,
+        Node.FnDef(
+          Node.SymLit(orderingName, Type.Trait),
+          Node.SymLit(gteName, gteType),
+          gteType
+        )
+      ),
+    )
+  )
+
   /*
    * Definition of 'common' trait Numeric which allows numerical comparisons
    * Function Defs:
@@ -146,6 +192,17 @@ object Common {
       Node.LuaIFn(neqType, Name.LocalName("~="))
     )
 
+  val orderingTraitImpl = SMap(
+    ModuleTree.Module.TraitFn(orderingName.name, ltName.name, Type.Number) ->
+      Node.LuaIFn(ltType, Name.LocalName("<")),
+    ModuleTree.Module.TraitFn(orderingName.name, gtName.name, Type.Number) ->
+      Node.LuaIFn(gtType, Name.LocalName(">")),
+    ModuleTree.Module.TraitFn(orderingName.name, lteName.name, Type.Number) ->
+      Node.LuaIFn(lteType, Name.LocalName("<=")),
+    ModuleTree.Module.TraitFn(orderingName.name, gteName.name, Type.Number) ->
+      Node.LuaIFn(gteType, Name.LocalName(">="))
+  )
+
   val numericTraitImpl = SMap(
     ModuleTree.Module.TraitFn(numericName.name, plusName.name, Type.Number) ->
       Node.LuaIFn(plusType, Name.LocalName("+")),
@@ -160,30 +217,8 @@ object Common {
   val commonTraitImpls =
     showTraitImpl ++
     equalityTraitImpl ++
+    orderingTraitImpl ++
     numericTraitImpl
-
-  /*
-   * Comparison functions TODO make this a trait
-   */
-  val gtName = Name.ModuleName(rootName, path, ">")
-  val gtType = Type.LuaFn(SList(Type.Number, Type.Number), Type.Boolean)
-  val gtVar = ModuleTree.Module.Var(gtName.name,
-    Node.LuaIFn(gtType, Name.LocalName(">")))
-
-  val gteName = Name.ModuleName(rootName, path, ">=")
-  val gteType = Type.LuaFn(SList(Type.Number, Type.Number), Type.Boolean)
-  val gteVar = ModuleTree.Module.Var(gteName.name,
-    Node.LuaIFn(gteType, Name.LocalName(">=")))
-
-  val ltName = Name.ModuleName(rootName, path, "<")
-  val ltType = Type.LuaFn(SList(Type.Number, Type.Number), Type.Boolean)
-  val ltVar = ModuleTree.Module.Var(ltName.name,
-    Node.LuaIFn(ltType, Name.LocalName("<")))
-
-  val lteName = Name.ModuleName(rootName, path, "<=")
-  val lteType = Type.LuaFn(SList(Type.Number, Type.Number), Type.Boolean)
-  val lteVar = ModuleTree.Module.Var(lteName.name,
-    Node.LuaIFn(lteType, Name.LocalName("<=")))
 
   /*
    * IO functions TODO make this is a trait?
@@ -202,14 +237,11 @@ object Common {
     SMap(
       showName.name -> showTrait,
       equalityName.name -> equalityTrait,
+      orderingName.name -> orderingTrait,
       numericName.name -> numericTrait
     ),
     commonTraitImpls,
     SMap(
-      gtName.name -> gtVar,
-      gteName.name -> gteVar,
-      ltName.name -> ltVar,
-      lteName.name -> lteVar,
       printName.name -> printVar
     )
   )
