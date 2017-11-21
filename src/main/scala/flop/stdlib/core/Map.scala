@@ -22,6 +22,12 @@ object Map {
     Type.Map(SList(generic1, generic2)))
   val newVar = ModuleTree.Module.Var(newName.name,
     Node.LuaPFn(newType, newName))
+  val getName = Name.ModuleName(rootName, path, "get")
+  val getType = Type.LuaFn(
+    SList(Type.Map(SList(generic1, generic2)), generic1),
+    generic2)
+  val getVar = ModuleTree.Module.Var(getName.name,
+    Node.LuaPFn(getType, getName))
 
   /*
    * Definition of 'map' module
@@ -33,6 +39,7 @@ object Map {
     SMap[ModuleTree.Module.TraitFn, Node.FnN](),
     SMap(
       newName.name -> newVar,
+      getName.name -> getVar
     )
   )
 }

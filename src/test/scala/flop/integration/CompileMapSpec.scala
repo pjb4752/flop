@@ -28,5 +28,12 @@ class CompileMapSpec extends BaseCompileSpec {
             "flopcore_core_map.new(flopcore_core_pair.new(1, flopcore_core_map.new(flopcore_core_pair.new(2, 3))))")
       }
     }
+
+    describe("getting the value of a key") {
+      it("should produce the correct lua") { f =>
+        f.compileFn("(map/get {\"hi\" 5} \"hi\")") should equal(
+          "flopcore_core_map.get(flopcore_core_map.new(flopcore_core_pair.new(\"hi\", 5)), \"hi\")")
+      }
+    }
   }
 }
