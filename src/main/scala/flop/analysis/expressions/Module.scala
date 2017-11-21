@@ -40,7 +40,8 @@ object Module {
   }
 
   private def defaultMessage(target: String): String = {
-    s"Expected valid module header, found ${target}"
+    s"""Expected valid module header
+       |  got: ${target}""".stripMargin
   }
 
   private def syntaxError(specificMessage: String) = {
@@ -51,8 +52,11 @@ object Module {
         |    NAME is a SYMBOL of the form:
         |      root.path2.pathn.name
         |    IMPORTS is of the form:
-        |      (import root.path1.pathn.name1
-        |              root.path2.pathn.name2)""".stripMargin
+        |      (import IMPORT-EXPR)
+        |    where:
+        |      IMPORT-EXPR is of the form:
+        |        fully.qualified.import OR
+        |        (fully.qualified.import abbr)""".stripMargin
 
     CompileError.syntaxError(specificMessage, genericMessage)
   }
@@ -82,26 +86,72 @@ object Module {
   }
 
   private def analyzeImports(forms: List[Form]): Map[String, Name.ModuleName] = {
-    forms.map(f => f match {
-      case Form.SymF(v) => analyzeImport(v)
-      case _ => {
-        val message = s"Expected import statement to contain " +
-          "a valid module path, got ${forms}"
-        throw syntaxError(message)
+    forms.foldLeft(Map[String, Name.ModuleName]())((m, f) => {
+      val newImport = f match {
+        case Form.SymF(v) => analyzeSimpleImport(v)
+        case Form.ListF(l) => analyzeAliasedImport(l)
+        case _ => {
+          val message = s"Expected import statement to contain " +
+            "a valid module path, got ${forms}"
+          throw syntaxError(message)
+        }
       }
+
+      val newAlias = newImport._1
+      if (m.contains(newAlias)) {
+        val message = s"Duplicated module alias ${newAlias}"
+        throw CompileError.moduleError(message)
+      }
+
+      m + newImport
     }).toMap
   }
 
-  private def analyzeImport(module: String): (String, Name.ModuleName) = {
+  private def analyzeSimpleImport(module: String): (String, Name.ModuleName) = {
+    val moduleName = analyzeModuleName(module)
+    (moduleName.name, moduleName)
+  }
+
+  private def analyzeAliasedImport(form: List[Form]): (String, Name.ModuleName) = {
+    if (form.length != 2) {
+      val message = s"Expected import statement to contain " +
+        s"a fully qualified module path and abbreviation, got ${form}"
+      throw syntaxError(message)
+    }
+
+    val moduleForm :: abbrForm :: Nil = form
+
+    val module = moduleForm match {
+      case Form.SymF(m) => m
+      case _ => {
+        val message = s"Expected import statement to contain " +
+          s"a fully qualified module path, got ${moduleForm}"
+        throw syntaxError(message)
+      }
+    }
+
+    val abbr = abbrForm match {
+      case Form.SymF(a) => a
+      case _ => {
+        val message = s"Expected import statement to contain " +
+          s"a module abbreviation, got ${moduleForm}"
+        throw syntaxError(message)
+      }
+    }
+
+    val moduleName = analyzeModuleName(module)
+    (abbr, moduleName)
+  }
+
+  private def analyzeModuleName(module: String): Name.ModuleName = {
     val moduleParts = module.split('.').toList
 
     if (moduleParts.length < 3) {
       val message = s"Expected import statement to contain " +
-        " a fully qualified module path, got ${module}"
+        s" a fully qualified module path, got ${module}"
       throw syntaxError(message)
     }
 
-    val moduleName = Name.ModuleName.fromList(moduleParts)
-    (moduleName.name, moduleName)
+    Name.ModuleName.fromList(moduleParts)
   }
 }
