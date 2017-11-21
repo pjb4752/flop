@@ -11,10 +11,7 @@ object Name {
   case class ModuleName(
     val tree: String,
     val paths: List[String],
-    val name: String) extends Name {
-
-    def toFlop = ((tree :: paths) :+ name).mkString(".")
-  }
+    val name: String) extends Name
 
   case class LocalName(val name: String) extends Name
 

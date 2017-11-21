@@ -13,7 +13,7 @@ class CompilePairSpec extends BaseCompileSpec {
   describe("getting the first pair value") {
     it("should produce the correct lua") { f =>
       f.compileFn("""
-        (+ (flopcore.core.pair.first #[5 true]) 10)""") should equal(
+        (+ (pair/first #[5 true]) 10)""") should equal(
           "(flopcore_core_pair.first(flopcore_core_pair.new(5, true)) + 10)"
         )
     }
@@ -22,7 +22,7 @@ class CompilePairSpec extends BaseCompileSpec {
   describe("getting the last pair value") {
     it("should produce the correct lua") { f =>
       f.compileFn("""
-        (+ (flopcore.core.pair.last #[false 7]) 10)""") should equal(
+        (+ (pair/last #[false 7]) 10)""") should equal(
           "(flopcore_core_pair.last(flopcore_core_pair.new(false, 7)) + 10)"
         )
     }

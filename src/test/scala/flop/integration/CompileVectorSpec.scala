@@ -34,7 +34,7 @@ class CompileVectorSpec extends BaseCompileSpec {
 
     describe("getting the element of a vector") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(flopcore.core.vector.get [5 4 3] 1)") should equal(
+        f.compileFn("(vector/get [5 4 3] 1)") should equal(
           "flopcore_core_vector.get(flopcore_core_vector.new(5, 4, 3), 1)")
       }
     }

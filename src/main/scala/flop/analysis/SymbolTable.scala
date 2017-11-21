@@ -88,10 +88,19 @@ object SymbolTable {
   def lookupName(table: SymbolTable, state: State, raw: String): Option[Name] = {
     if (isLiteral(raw)) {
       Some(LiteralName(raw))
-    } else if (raw.contains('.')) {
-      lookupQualifiedName(table, state, raw)
+    } else if (raw.contains('/')) {
+      if (raw.contains('.')) {
+        lookupQualifiedName(table, state, raw)
+      } else {
+        lookupAliasedName(table, state, raw)
+      }
     } else {
-      lookupUnqualifiedName(table, state, raw)
+      if (raw.contains('.')) {
+        val message = s"invalid name format: ${raw}, only module name given"
+        throw CompileError.nameError(message)
+      } else {
+        lookupUnqualifiedName(table, state, raw)
+      }
     }
   }
 
@@ -167,14 +176,18 @@ object SymbolTable {
   }
 
   private def lookupQualifiedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
-    val nameParts = raw.split('.').toList
+    val nameParts = raw.split('/').toList
 
-    if (SymbolTable.isReservedName(nameParts.last)) {
-      throw CompileError.reservedWordError(nameParts.last)
+    if (nameParts.size != 2) {
+      throw CompileError.nameError(s"invalid qualified name format ${raw}")
+    }
+    val moduleParts :: rawName :: Nil = nameParts
+
+    if (SymbolTable.isReservedName(rawName)) {
+      throw CompileError.reservedWordError(rawName)
     }
 
-    val treeName = nameParts.head
-    val paths = nameParts.slice(1, nameParts.length - 1)
+    val treeName :: paths = moduleParts.split('.').toList
     val maybeTree = table.trees.get(treeName)
 
     val validModulePath = maybeTree.map(tree =>
@@ -182,9 +195,9 @@ object SymbolTable {
 
     if (validModulePath) {
       // check if the path referenced is imported
-      val mBase :: mPaths = nameParts.tail.reverse.tail
+      val mBase :: mPaths = paths.reverse
       val mName = ModuleName(treeName, mPaths, mBase)
-      val varName = ModuleName(treeName, paths, nameParts.last)
+      val varName = ModuleName(treeName, paths, rawName)
       val currentModule = getModule(table, state.currentModule)
 
       val isStdlibModule = mName == Common.module.name
@@ -203,19 +216,61 @@ object SymbolTable {
       } else {
         val traitTuple = findModule(table, treeName, paths).flatMap(maybeMod =>
           maybeMod.traits.find({ case (_, Trait(_, fndefs)) =>
-            fndefs.mapValues(_.fnDef.fnName).contains(nameParts.last)
+            fndefs.mapValues(_.fnDef.fnName).contains(rawName)
           }))
 
         traitTuple.map(maybeTrait => {
           val traitName = maybeTrait._1
           val moduleName = ModuleName(treeName, paths, traitName)
 
-          TraitFnName(moduleName, nameParts.last)
+          TraitFnName(moduleName, rawName)
         })
       }
     } else {
-      val message = s"Module name ${nameParts} is not valid"
+      val message = s"Module name ${raw} is not valid"
       throw CompileError.moduleError(message)
+    }
+  }
+
+  private def lookupAliasedName(table: SymbolTable, state: State, raw: String): Option[Name] = {
+    val nameParts = raw.split('/').toList
+
+    if (nameParts.size != 2) {
+      throw CompileError.nameError(s"invalid qualified name format ${raw}")
+    }
+
+    val aliasName :: baseName :: Nil = nameParts
+
+    if (SymbolTable.isReservedName(baseName)) {
+      throw CompileError.reservedWordError(baseName)
+    }
+
+    val currentModule = getModule(table, state.currentModule)
+
+    if (!currentModule.imports.contains(aliasName)) {
+      throw CompileError.nameError(s"in ${raw}, no module alias ${aliasName}")
+    }
+
+    val fullName = currentModule.imports(aliasName)
+    val varName = ModuleName.nest(fullName, baseName)
+    val moduleVar = lookupVar(table, varName).map(_ => varName)
+
+    if (moduleVar.nonEmpty) {
+      moduleVar
+    } else {
+      val modulePaths = fullName.paths :+ fullName.name
+      val maybeModule = findModule(table, fullName.tree, modulePaths)
+      val traitTuple = maybeModule.flatMap(maybeMod =>
+        maybeMod.traits.find({ case (_, Trait(_, fndefs)) =>
+          fndefs.mapValues(_.fnDef.fnName).contains(baseName)
+        }))
+
+      traitTuple.map(maybeTrait => {
+        val traitName = maybeTrait._1
+        val moduleName = ModuleName.nest(fullName, traitName)
+
+        TraitFnName(moduleName, baseName)
+      })
     }
   }
 

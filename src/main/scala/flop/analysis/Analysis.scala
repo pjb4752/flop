@@ -92,18 +92,22 @@ object Analysis {
   }
 
   private def analyzeVector(table: SymbolTable, state: State, vector: List[Form]): Node = {
-    val vectorFnName = Vector.newName.toFlop
+    val vectorFnName = toFlopFnName(Vector.newName)
     Apply.analyze(table, state, vectorFnName, vector)
   }
 
   private def analyzeMap(table: SymbolTable, state: State, map: SMap[Form, Form]): Node = {
     val analyzeFn = tryAnalyze(table, state.copy(atTopLevel = false)) _
-    val pairFnName = Form.SymF(Pair.newName.toFlop)
-    val mapFnName = Map.newName.toFlop
+    val pairFnName = Form.SymF(toFlopFnName(Pair.newName))
+    val mapFnName = toFlopFnName(Map.newName)
 
     val args = map.map({ case (k, v) =>
       Form.ListF(List(pairFnName, k, v)) }).toList
 
     Apply.analyze(table, state, mapFnName, args)
+  }
+
+  private def toFlopFnName(name: Name.ModuleName): String = {
+    (name.tree :: name.paths).mkString("", ".", s"/${name.name}")
   }
 }

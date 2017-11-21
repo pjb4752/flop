@@ -2,6 +2,7 @@ package flop.reading
 
 import scala.collection.immutable.ListMap
 
+import flop.analysis.Name
 import flop.stdlib.core.{Pair, Vector}
 
 object Reading {
@@ -230,7 +231,11 @@ object Reading {
         if (output.length != 2) {
           throw SyntaxError("wrong number of forms in pair literal")
         }
-        val fn = Form.SymF(Pair.newName.toFlop)
+        // TODO WTF??
+        val fnName = Pair.newName
+        val fnString = (fnName.tree :: fnName.paths).
+            mkString("", ".", s"/${fnName.name}")
+        val fn = Form.SymF(fnString)
         (input.tail, Form.ListF(fn :: output.reverse))
       } else if (isBlank(input.head)) {
         val in = ignoreBlank(input)

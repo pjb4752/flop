@@ -22,7 +22,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
     val root = "root"
     val table = SymbolTable.withRoot(root)
     val path = List[String]("core")
-    val imports = Map[String, Name.ModuleName]()
+    val imports = Core.stdLibImports
     val traits = Map[String, ModuleTree.Module.Trait]()
     val traitImpls = Map[ModuleTree.Module.TraitFn, Node.FnN]()
     val vars = Map[String, ModuleTree.Module.Var](
@@ -75,7 +75,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the name exists") {
           it("should return the name") { f =>
             SymbolTable.lookupName(
-              f.table, f.state, "flopcore.core.common.+",
+              f.table, f.state, "flopcore.core.common/+",
             ) should equal(
               Some(
                 Name.TraitFnName(
@@ -90,7 +90,7 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the name is a reserved word") {
           it("should throw a compile error") { f =>
             an [CompileError] should be thrownBy(
-              SymbolTable.lookupName(f.table, f.state, "flopcore.core.common.def")
+              SymbolTable.lookupName(f.table, f.state, "flopcore.core.common/def")
             )
           }
         }
@@ -106,7 +106,45 @@ class SymbolTableSpec extends fixture.FunSpec with Matchers {
         describe("the name does not exist") {
           it("should return None") { f =>
             SymbolTable.lookupName(
-              f.table, f.state, "flopcore.core.common.thing",
+              f.table, f.state, "flopcore.core.common/thing",
+            ) should equal(None)
+          }
+        }
+      }
+
+      describe("the name is aliased") {
+        describe("the name exists") {
+          it("should return the name") { f =>
+            SymbolTable.lookupName(
+              f.table, f.state, "list/head",
+            ) should equal(
+              Some(
+                Name.ModuleName("flopcore", List("core", "list"), "head"),
+              )
+            )
+          }
+        }
+
+        describe("the name is a reserved word") {
+          it("should throw a compile error") { f =>
+            an [CompileError] should be thrownBy(
+              SymbolTable.lookupName(f.table, f.state, "list/def")
+            )
+          }
+        }
+
+        describe("the alias is not valid") {
+          it("should throw a compile error") { f =>
+            an [CompileError] should be thrownBy(
+              SymbolTable.lookupName(f.table, f.state, "hi/head")
+            )
+          }
+        }
+
+        describe("the name is not valid") {
+          it("should return None") { f =>
+            SymbolTable.lookupName(
+              f.table, f.state, "list/foo"
             ) should equal(None)
           }
         }
