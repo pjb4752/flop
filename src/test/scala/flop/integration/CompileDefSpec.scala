@@ -9,7 +9,7 @@ class CompileDefSpec extends BaseCompileSpec {
   describe("compiling def special form") {
     describe("defining from literal values") {
       it("should produce the correct lua") { f =>
-        f.compileFn("(def x 5)") should equal("local x = 5")
+        f.compileFn("(def x 5)") should equal("local x = 5\n")
       }
     }
 
@@ -18,7 +18,7 @@ class CompileDefSpec extends BaseCompileSpec {
         f.compileFn("""
           (def x
             (+ 1 2))"""
-        ) should equal("local x = (1 + 2)")
+        ) should equal("local x = (1 + 2)\n")
       }
     }
 
@@ -29,10 +29,11 @@ class CompileDefSpec extends BaseCompileSpec {
             (fn num {a num b num}
               (+ a b)))""") should equal(
           """local x = function(a, b)
-            |local var_1
-            |var_1 = (a + b)
-            |return var_1
-            |end""".stripMargin)
+            |  local var_2
+            |  var_2 = (a + b)
+            |  return var_2
+            |end
+            |""".stripMargin)
       }
     }
 

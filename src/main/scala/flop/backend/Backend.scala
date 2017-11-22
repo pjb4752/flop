@@ -4,6 +4,13 @@ import flop.analysis.{ModuleTree, Name, Node}
 
 object Backend {
 
+  trait Expr
+
+  object Expr {
+    case object Simple extends Expr
+    case object Complex extends Expr
+  }
+
   def emitModule(module: ModuleTree.Module, nodes: List[Node]): List[String] = {
     val state = State(module, 0, 0, 0)
 
@@ -26,12 +33,12 @@ object Backend {
       val requirePath = fullModulePath.filter(_.nonEmpty).mkString(".")
 
       s"local ${requireName} = require('${requirePath}')"
-    }).toList
+    }).toList ++ List("")
   }
 
   private def emitReturn(module: ModuleTree.Module): List[String] = {
-    val names = module.vars.keys.map(name => s"${name} = ${name},").toList
-    ("return {" :: names) :+ "}"
+    val names = module.vars.keys.map(name => s"  ${name} = ${name},").toList
+    ("" :: "return {" :: names) :+ "}"
   }
 
   private def tryEmit(state: State)(node: Node): String = node match {
@@ -72,43 +79,62 @@ object Backend {
     }
   }
 
-  private def emitDef(state: State, name: Node.SymLit, value: Node): String =
-    s"local ${name.name.name} = ${tryEmit(state)(value)}"
+  private def emitDef(state: State, name: Node.SymLit, value: Node): String = {
+    val newState = state.nextVarState()
+    val (exprType, emittedValue) = emitExpr(newState, value)
+
+    val result = exprType match {
+      // TODO hack for now to not use returned emitExpr result
+      case Expr.Simple => s"local ${name.name.name} = ${tryEmit(newState)(value)}"
+      case Expr.Complex => {
+        s"""local ${newState.varName}
+           |${emittedValue}
+           |local ${name.name.name} = ${newState.varName}""".stripMargin
+      }
+    }
+
+    result + "\n"
+  }
 
   private def emitLet(state: State, bindings: Node.Bindings, expr: Node): String = {
     val newState = state.nextVarState()
-    val bodyClause = emitExpr(newState, expr)
+    val indentedState = newState.indent()
 
-    s"""local ${newState.varName}
-       |do
-       |${emitBindings(newState, bindings)}
+    val (_, bodyClause) = emitExpr(indentedState, expr)
+    val emittedBindings = emitBindings(indentedState, bindings)
+    s"""${newState.tabStop}local ${newState.varName}
+       |${newState.tabStop}do
+       |${emitBindings(indentedState, bindings)}
        |${bodyClause}
-       |end""".stripMargin
+       |${newState.tabStop}end""".stripMargin
   }
 
   private def emitIf(state: State, test: Node, ifExpr: Node, elseExpr: Node): String = {
     val newState = state.nextVarState()
-    val ifClause = emitExpr(newState, ifExpr)
-    val elseClause = emitExpr(newState, elseExpr)
+    val indentedState = newState.indent()
+    val (_, ifClause) = emitExpr(indentedState, ifExpr)
+    val (_, elseClause) = emitExpr(indentedState, elseExpr)
 
     // TODO support code emission for complex testExpr
-    s"""local ${newState.varName}
-       |if ${tryEmit(newState)(test)} then
+    s"""${newState.tabStop}local ${newState.varName}
+       |${newState.tabStop}if ${tryEmit(newState)(test)} then
        |${ifClause}
-       |else
+       |${newState.tabStop}else
        |${elseClause}
-       |end""".stripMargin
+       |${newState.tabStop}end""".stripMargin
   }
 
   private def emitFunction(state: State, params: Node.Params, expr: Node): String = {
     val newState = state.nextVarState()
+    val indentedState = newState.indent()
     val paramNames = params.map(_._1.name.name).mkString(", ")
+    val (_, bodyClause) = emitExpr(indentedState, expr)
 
-    s"""function(${paramNames})
-       |local ${newState.varName}
-       |${emitExpr(newState, expr)}
-       |return ${newState.varName}
-       |end""".stripMargin
+    s"""${newState.tabStop}function(${paramNames})
+       |${indentedState.tabStop}local ${newState.varName}
+       |${bodyClause}
+       |${indentedState.tabStop}return ${newState.varName}
+       |${newState.tabStop}end""".stripMargin
   }
 
   private def emitLuaApply(state: State, fn: Node.LuaFn, args: List[Node]): String = fn match {
@@ -120,22 +146,23 @@ object Backend {
     emitPrefixApply(state, name, args)
   }
 
-  private def emitExpr(state: State, expr: Node): String = expr match {
-    case _:Node.LetN | _:Node.IfN => emitComplexExpr(state, expr)
-    case _ => emitSimpleExpr(state, expr)
+  private def emitExpr(state: State, expr: Node): (Expr, String) = expr match {
+    case _:Node.LetN | _:Node.IfN => (Expr.Complex, emitComplexExpr(state, expr))
+    case _ => (Expr.Simple, emitSimpleExpr(state, expr))
   }
 
   private def emitSimpleExpr(state: State, expr: Node): String = {
-    s"${state.varName} = ${tryEmit(state)(expr)}"
+    s"${state.tabStop}${state.varName} = ${tryEmit(state)(expr)}"
   }
 
   private def emitComplexExpr(state: State, expr: Node): String = {
     s"""${tryEmit(state)(expr)}
-       |${state.varName} = ${state.nextVarState().varName}""".stripMargin
+       |${state.tabStop}${state.varName} = ${state.nextVarState().varName}""".stripMargin
   }
 
   private def emitBindings(state: State, bindings: Node.Bindings): String = {
-    bindings.map({ case (sym, expr) => expr match {
+    bindings.map({ case (sym, expr) =>
+      expr match {
         case _:Node.LetN | _:Node.IfN => emitComplexBinding(state, sym, expr)
         case _ => emitSimpleBinding(state, sym, expr)
       }
@@ -143,13 +170,13 @@ object Backend {
   }
 
   private def emitSimpleBinding(state: State, symbol: Node.SymLit, expr: Node): String = {
-    s"local ${symbol.name.name} = ${tryEmit(state)(expr)}"
+    s"${state.tabStop}local ${symbol.name.name} = ${tryEmit(state)(expr)}"
   }
 
   private def emitComplexBinding(state: State, symbol: Node.SymLit, expr: Node): String = {
     val newState = state.nextVarState()
     s"""${tryEmit(state)(expr)}
-       |local ${symbol.name.name} = ${state.nextVarState().varName}""".stripMargin
+       |${state.tabStop}local ${symbol.name.name} = ${state.nextVarState().varName}""".stripMargin
   }
 
   private def emitInfixApply(state: State, name: Name, left: Node,

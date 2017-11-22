@@ -10,9 +10,9 @@ class CompileIfSpec extends BaseCompileSpec {
         f.compileFn("(if (value? 1 2) 5 3)") should equal(
           """local var_1
             |if value?(1, 2) then
-            |var_1 = 5
+            |  var_1 = 5
             |else
-            |var_1 = 3
+            |  var_1 = 3
             |end""".stripMargin)
       }
     }
@@ -25,9 +25,9 @@ class CompileIfSpec extends BaseCompileSpec {
             |  (+ testnum2 1))""".stripMargin) should equal(
           """local var_1
             |if (testnum1 == testnum2) then
-            |var_1 = (testnum1 + 1)
+            |  var_1 = (testnum1 + 1)
             |else
-            |var_1 = (testnum2 + 1)
+            |  var_1 = (testnum2 + 1)
             |end""".stripMargin)
       }
     }
@@ -42,15 +42,15 @@ class CompileIfSpec extends BaseCompileSpec {
             |testnum2)""".stripMargin) should equal(
           """local var_1
             |if (testnum1 > testnum2) then
-            |local var_2
-            |if (testnum1 > testnum3) then
-            |var_2 = testnum1
+            |  local var_2
+            |  if (testnum1 > testnum3) then
+            |    var_2 = testnum1
+            |  else
+            |    var_2 = testnum3
+            |  end
+            |  var_1 = var_2
             |else
-            |var_2 = testnum3
-            |end
-            |var_1 = var_2
-            |else
-            |var_1 = testnum2
+            |  var_1 = testnum2
             |end""".stripMargin)
       }
     }

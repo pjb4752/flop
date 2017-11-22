@@ -10,8 +10,8 @@ class CompileLetSpec extends BaseCompileSpec {
         f.compileFn("(let (x 5) x)") should equal(
           """local var_1
             |do
-            |local x = 5
-            |var_1 = x
+            |  local x = 5
+            |  var_1 = x
             |end""".stripMargin)
       }
     }
@@ -25,12 +25,12 @@ class CompileLetSpec extends BaseCompileSpec {
             x)""") should equal(
           """local var_1
             |do
-            |local x = function(a, b)
-            |local var_2
-            |var_2 = (a + b)
-            |return var_2
-            |end
-            |var_1 = x
+            |  local x =   function(a, b)
+            |    local var_2
+            |    var_2 = (a + b)
+            |    return var_2
+            |  end
+            |  var_1 = x
             |end""".stripMargin)
       }
     }
@@ -42,8 +42,8 @@ class CompileLetSpec extends BaseCompileSpec {
             (+ 1 x))""") should equal(
           """local var_1
             |do
-            |local x = (1 + 2)
-            |var_1 = (1 + x)
+            |  local x = (1 + 2)
+            |  var_1 = (1 + x)
             |end""".stripMargin)
       }
     }
@@ -55,13 +55,13 @@ class CompileLetSpec extends BaseCompileSpec {
             |  (let (y (+ x 5)) y))""".stripMargin) should equal(
           """local var_1
             |do
-            |local x = 5
-            |local var_2
-            |do
-            |local y = (x + 5)
-            |var_2 = y
-            |end
-            |var_1 = var_2
+            |  local x = 5
+            |  local var_2
+            |  do
+            |    local y = (x + 5)
+            |    var_2 = y
+            |  end
+            |  var_1 = var_2
             |end""".stripMargin)
       }
     }
@@ -74,18 +74,18 @@ class CompileLetSpec extends BaseCompileSpec {
             |    (let (z (+ y 3)) z)))""".stripMargin) should equal(
           """local var_1
             |do
-            |local x = 5
-            |local var_2
-            |do
-            |local y = (x + 5)
-            |local var_3
-            |do
-            |local z = (y + 3)
-            |var_3 = z
-            |end
-            |var_2 = var_3
-            |end
-            |var_1 = var_2
+            |  local x = 5
+            |  local var_2
+            |  do
+            |    local y = (x + 5)
+            |    local var_3
+            |    do
+            |      local z = (y + 3)
+            |      var_3 = z
+            |    end
+            |    var_2 = var_3
+            |  end
+            |  var_1 = var_2
             |end""".stripMargin)
       }
     }
@@ -98,13 +98,13 @@ class CompileLetSpec extends BaseCompileSpec {
               (+ 1 x))""") should equal(
           """local var_1
             |do
-            |local var_2
-            |do
-            |local y = 5
-            |var_2 = y
-            |end
-            |local x = var_2
-            |var_1 = (1 + x)
+            |  local var_2
+            |  do
+            |    local y = 5
+            |    var_2 = y
+            |  end
+            |  local x = var_2
+            |  var_1 = (1 + x)
             |end""".stripMargin)
       }
     }
@@ -117,15 +117,15 @@ class CompileLetSpec extends BaseCompileSpec {
             |  (+ x m))""".stripMargin) should equal(
           """local var_1
             |do
-            |local var_2
-            |if (testnum1 > testnum2) then
-            |var_2 = testnum1
-            |else
-            |var_2 = testnum2
-            |end
-            |local x = var_2
-            |local m = 5
-            |var_1 = (x + m)
+            |  local var_2
+            |  if (testnum1 > testnum2) then
+            |    var_2 = testnum1
+            |  else
+            |    var_2 = testnum2
+            |  end
+            |  local x = var_2
+            |  local m = 5
+            |  var_1 = (x + m)
             |end""".stripMargin)
       }
     }

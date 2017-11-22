@@ -13,9 +13,9 @@ class CompileFnSpec extends BaseCompileSpec {
           (fn num {a num b num}
             (+ a b))""") should equal(
           """function(a, b)
-            |local var_1
-            |var_1 = (a + b)
-            |return var_1
+            |  local var_1
+            |  var_1 = (a + b)
+            |  return var_1
             |end""".stripMargin)
       }
     }
@@ -28,15 +28,15 @@ class CompileFnSpec extends BaseCompileSpec {
             |    "max is a"
             |    "max is b"))""".stripMargin) should equal(
           """function(a, b)
-            |local var_1
-            |local var_2
-            |if (a > b) then
-            |var_2 = "max is a"
-            |else
-            |var_2 = "max is b"
-            |end
-            |var_1 = var_2
-            |return var_1
+            |  local var_1
+            |  local var_2
+            |  if (a > b) then
+            |    var_2 = "max is a"
+            |  else
+            |    var_2 = "max is b"
+            |  end
+            |  var_1 = var_2
+            |  return var_1
             |end""".stripMargin)
       }
     }
@@ -49,14 +49,14 @@ class CompileFnSpec extends BaseCompileSpec {
             |  (let (b 5)
             |    (+ a b)))""".stripMargin) should equal(
           """function(a)
-            |local var_1
-            |local var_2
-            |do
-            |local b = 5
-            |var_2 = (a + b)
-            |end
-            |var_1 = var_2
-            |return var_1
+            |  local var_1
+            |  local var_2
+            |  do
+            |    local b = 5
+            |    var_2 = (a + b)
+            |  end
+            |  var_1 = var_2
+            |  return var_1
             |end""".stripMargin)
     }
   }
